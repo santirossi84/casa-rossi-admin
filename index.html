@@ -28,7 +28,7 @@ body{margin:0;min-height:100vh;background:var(--night);color:var(--cream);font-f
 
 .hero{padding:44px 0 0}
 .brand{font-family:'Ultra',Georgia,serif;font-weight:400;font-size:clamp(48px,9vw,100px);line-height:.95;margin:0;color:var(--rojo);-webkit-text-stroke:4px var(--cream);paint-order:stroke fill;letter-spacing:1px}
-.sub{margin:12px 0 22px;color:var(--muted);font-size:17px}
+.sub{margin:12px 0 10px;color:var(--muted);font-size:17px}
 .cinta{display:grid;gap:4px}
 .cinta i{display:block;height:7px;transform-origin:left center;animation:ignite 1s cubic-bezier(.2,.8,.2,1) both}
 .cinta i:nth-child(1){background:var(--mostaza);color:var(--mostaza)}
@@ -120,6 +120,13 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
 .pos{color:var(--ok)}.neg{color:var(--bad)}
 .empty{padding:28px 8px;text-align:center;color:var(--muted)}
 
+.sync{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:0 0 18px}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync.ok::before{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.sync.sync-on::before{background:var(--holo);animation:flick 1s steps(2) infinite}
+.sync.off::before{background:var(--bad)}
+.login{max-width:420px;margin:10px 0 0;padding:24px}
+.login p{margin:6px 0 16px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--glass-strong);border:1px solid rgba(127,214,242,.4);color:var(--cream);padding:10px 18px;border-radius:12px;z-index:50;transition:all .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -179,9 +186,18 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
   <header class="hero">
     <h1 class="brand">Casa Rossi</h1>
     <p class="sub">Alquiler temporario en Rafaela, Santa Fe</p>
+    <p class="sync" id="sync" role="status">Solo en este navegador</p>
     <div class="cinta" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   </header>
 
+  <section class="glass login" id="login" hidden>
+    <h2>Entrar</h2>
+    <p class="muted">Ingresá la clave para ver y guardar los datos de Casa Rossi. Queda recordada en este dispositivo.</p>
+    <label class="f">Clave<input type="password" id="lClave" autocomplete="current-password"></label>
+    <div class="btns" style="margin-top:14px"><button class="btn primary" id="lEntrar">Entrar</button><p class="err" id="lErr"></p></div>
+  </section>
+
+  <div id="app">
   <nav class="tabs" role="tablist" aria-label="Secciones">
     <button class="tab-btn" role="tab" data-tab="reservas" aria-selected="true">Reservas</button>
     <button class="tab-btn" role="tab" data-tab="gastos" aria-selected="false">Gastos</button>
@@ -285,7 +301,7 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
     <section class="tab" id="t-datos" role="tabpanel" hidden>
       <div class="glass panel">
         <h2>Tus datos</h2>
-        <p class="muted" style="max-width:70ch">Todo lo que cargás queda guardado en este navegador, en este dispositivo. Descargá un backup seguido: si borrás los datos del navegador o entrás desde otro equipo, se restaura desde ese archivo.</p>
+        <p class="muted" style="max-width:70ch">Los datos se guardan en la nube privada de Casa Rossi y se ven iguales desde cualquier dispositivo donde entres con la clave. Además queda una copia en este navegador por si se corta internet, y la nube guarda una versión por día. El backup descargable sigue siendo tu respaldo propio.</p>
         <div class="btns" style="margin-top:14px">
           <button class="btn primary" id="dBackup">Descargar backup</button>
           <label class="btn" for="dFile" style="display:inline-block">Restaurar o importar archivo</label>
@@ -295,11 +311,13 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
         </div>
         <p class="muted small" id="dInfo" style="margin-top:14px"></p>
         <div class="btns" style="margin-top:28px">
+          <button class="btn" id="dSalir">Cerrar sesión en este dispositivo</button>
           <button class="btn danger" id="dBorrar">Borrar todos los datos</button>
         </div>
       </div>
     </section>
   </main>
+  </div>
 </div>
 
 <!-- DIALOG RESERVA -->
@@ -390,7 +408,51 @@ const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll
 function emptyDb(){return {app:'casa-rossi',v:1,reservas:[],gastos:[]}}
 function load(){try{const x=JSON.parse(localStorage.getItem(LS));if(x&&Array.isArray(x.reservas))return x}catch(e){}return emptyDb()}
 let db=load();
-function save(){try{localStorage.setItem(LS,JSON.stringify(db));return true}catch(e){toast('No se pudo guardar en este navegador. Descargá un backup.');return false}}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(db));localStorage.setItem(LS+'_rev',String(rev));return true}catch(e){return false}}
+function save(){const okL=saveLocal();if(cloud)schedulePush();else if(!okL){toast('No se pudo guardar en este navegador. Descargá un backup.');return false}return true}
+
+/* ---------- nube ---------- */
+const KC='casa_rossi_clave';
+let clave='',rev=0,cloud=false,pushTimer=null,pushing=false,dirty=false;
+try{clave=localStorage.getItem(KC)||'';rev=+(localStorage.getItem(LS+'_rev')||0)}catch(e){}
+function setSync(cls,t){const e=$('#sync');e.className='sync '+cls;e.textContent=t}
+function api(method,body){return fetch('/api/datos',{method,cache:'no-store',headers:{'content-type':'application/json','x-clave':clave},body:body?JSON.stringify(body):undefined})}
+function showLogin(msg){cloud=false;$('#app').hidden=true;$('#login').hidden=false;$('#lErr').textContent=msg||'';setSync('off','Sin sesión');setTimeout(()=>$('#lClave').focus(),50)}
+function hideLogin(){$('#login').hidden=true;$('#app').hidden=false}
+async function pull(first){
+  if(!clave){showLogin();return}
+  setSync('sync-on','Sincronizando');
+  let r;
+  try{r=await api('GET')}catch(e){setSync('off','Sin conexión: los cambios quedan en este navegador');hideLogin();cloud=true;dirty=true;return}
+  if(r.status===401){try{localStorage.removeItem(KC)}catch(e){}clave='';showLogin(first?'La clave no es correcta.':'La clave cambió. Ingresala de nuevo.');return}
+  if(r.status===404){cloud=false;hideLogin();setSync('off','Solo en este navegador');return}
+  let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok){hideLogin();cloud=true;setSync('off',j.error||'No se pudo conectar con la nube');return}
+  hideLogin();cloud=true;
+  if(j.vacio){if(db.reservas.length||db.gastos.length){toast('Subiendo a la nube los datos de este navegador');await push()}else setSync('ok','Guardado en la nube');return}
+  if(dirty&&+j.rev<=rev){await push();return}
+  if(+j.rev>=rev){db=j.data;if(!Array.isArray(db.gastos))db.gastos=[];rev=+j.rev;saveLocal();renderAll()}
+  setSync('ok','Guardado en la nube');
+}
+function schedulePush(){dirty=true;clearTimeout(pushTimer);pushTimer=setTimeout(push,600);setSync('sync-on','Guardando')}
+async function push(){
+  if(!cloud||!clave)return;
+  if(pushing){clearTimeout(pushTimer);pushTimer=setTimeout(push,600);return}
+  pushing=true;dirty=false;
+  try{
+    const r=await api('PUT',{rev,data:db});
+    if(r.status===401){pushing=false;dirty=true;try{localStorage.removeItem(KC)}catch(e){}clave='';showLogin('La clave cambió. Ingresala de nuevo.');return}
+    if(r.status===409){const j=await r.json();db=j.data;rev=+j.rev;saveLocal();renderAll();toast('Había cambios más nuevos hechos desde otro dispositivo. Se cargaron esos: revisá tu último cambio.');setSync('ok','Guardado en la nube');return}
+    if(!r.ok)throw 0;
+    const j=await r.json();rev=+j.rev;saveLocal();
+    setSync(dirty?'sync-on':'ok',dirty?'Guardando':'Guardado en la nube');
+  }catch(e){dirty=true;setSync('off','Sin conexión: cambios pendientes de subir')}
+  finally{pushing=false}
+}
+window.addEventListener('online',()=>{if(cloud&&dirty)push()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloud&&!pushing){if(dirty)push();else pull()}});
+window.addEventListener('beforeunload',e=>{if(cloud&&(dirty||pushing)){e.preventDefault();e.returnValue=''}});
+
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 /* ---------- utilidades ---------- */
@@ -862,6 +924,10 @@ function renderDatos(){$('#dInfo').textContent=db.reservas.length+' reservas y '
 
 function renderAll(){renderKpis();renderReservas();renderGastos();renderComisiones();renderDatos();if(!$('#t-informe').hidden)renderInforme()}
 resetG();renderAll();loadTC();
+$('#lEntrar').addEventListener('click',async()=>{const v=$('#lClave').value;if(!v){$('#lErr').textContent='Ingresá la clave.';return}clave=v;try{localStorage.setItem(KC,v)}catch(e){}$('#lClave').value='';await pull(true)});
+$('#lClave').addEventListener('keydown',e=>{if(e.key==='Enter')$('#lEntrar').click()});
+$('#dSalir').addEventListener('click',()=>{if(!confirm('Se cierra la sesión en este dispositivo. Los datos siguen en la nube. ¿Seguimos?'))return;try{localStorage.removeItem(KC)}catch(e){}clave='';showLogin()});
+if(location.protocol==='file:'){setSync('off','Solo en este navegador')}else{pull(true)}
 
 /* ---------- cielo: salto al hiperespacio y estrellas ---------- */
 const cv=$('#sky'),cx=cv.getContext('2d');let W=0,H=0,stars=[];
