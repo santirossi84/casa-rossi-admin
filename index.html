@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casa Rossi</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ultra&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0A1128;--glass:rgba(17,27,54,.58);--glass-strong:rgba(14,22,46,.94);
+  --line:rgba(239,230,210,.10);--cream:#EFE6D2;--muted:#9AA6BF;
+  --mostaza:#E3A33B;--naranja:#D8662C;--rojo:#B8322A;--marron:#5A3420;
+  --holo:#7FD6F2;--ok:#86C98A;--bad:#E8746B;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--night);color:var(--cream);font-family:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;line-height:1.5}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+.mountains{position:fixed;left:0;right:0;bottom:0;width:100%;height:30vh;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 20px 120px}
+
+.hero{padding:44px 0 0}
+.brand{font-family:'Ultra',Georgia,serif;font-weight:400;font-size:clamp(48px,9vw,100px);line-height:.95;margin:0;color:var(--rojo);-webkit-text-stroke:4px var(--cream);paint-order:stroke fill;letter-spacing:1px}
+.sub{margin:12px 0 22px;color:var(--muted);font-size:17px}
+.cinta{display:grid;gap:4px}
+.cinta i{display:block;height:7px;transform-origin:left center;animation:ignite 1s cubic-bezier(.2,.8,.2,1) both}
+.cinta i:nth-child(1){background:var(--mostaza);color:var(--mostaza)}
+.cinta i:nth-child(2){background:var(--naranja);color:var(--naranja);animation-delay:.08s}
+.cinta i:nth-child(3){background:var(--rojo);color:var(--rojo);animation-delay:.16s}
+.cinta i:nth-child(4){background:var(--marron);color:var(--marron);animation-delay:.24s}
+@keyframes ignite{0%{transform:scaleX(0);box-shadow:0 0 0 transparent}70%{box-shadow:0 0 24px currentColor}100%{transform:scaleX(1);box-shadow:0 0 7px currentColor}}
+
+.tabs{display:flex;gap:6px;margin:22px 0 20px;flex-wrap:wrap}
+.tab-btn{font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:19px;background:transparent;color:var(--muted);border:1px solid transparent;padding:6px 18px;border-radius:999px;cursor:pointer}
+.tab-btn:hover{color:var(--cream)}
+.tab-btn[aria-selected="true"]{color:var(--cream);background:var(--glass);border-color:var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(125%);backdrop-filter:blur(14px) saturate(125%);border:1px solid var(--line);border-radius:16px}
+.panel{padding:20px}
+.panel+.panel{margin-top:16px}
+.panel-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h2{font-family:'Ultra',Georgia,serif;font-weight:400;font-size:24px;margin:0;color:var(--cream)}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:16px 18px}
+.kpi .lbl{font-family:'Barlow Condensed',sans-serif;font-weight:500;color:var(--muted);font-size:17px}
+.kpi .val{font-family:'Ultra',Georgia,serif;font-size:25px;color:var(--mostaza);margin-top:2px;line-height:1.2}
+.kpi .hint{color:var(--muted);font-size:14px;margin-top:2px}
+
+.holo{position:relative;overflow:hidden;transition:box-shadow .2s}
+.holo::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:repeating-linear-gradient(0deg,rgba(127,214,242,.11) 0 1px,transparent 1px 3px);transition:opacity .2s}
+.holo:hover,.holo:focus-within{box-shadow:inset 0 0 0 1px rgba(127,214,242,.4)}
+.holo:hover::after,.holo:focus-within::after{opacity:1;animation:flick 1.4s steps(3) infinite}
+.holo:hover .val{color:var(--holo);text-shadow:0 0 14px rgba(127,214,242,.55)}
+@keyframes flick{0%{opacity:.95}40%{opacity:.5}70%{opacity:.85}100%{opacity:.95}}
+
+.scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tbl th{font-family:'Barlow Condensed',sans-serif;font-weight:500;color:var(--muted);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);font-size:16px;white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid rgba(239,230,210,.06);vertical-align:middle}
+.tbl .num{text-align:right;white-space:nowrap}
+.tbl tr.row{cursor:pointer}
+.tbl tr.row:hover td,.tbl tr.row:focus td{background-color:rgba(127,214,242,.07);background-image:repeating-linear-gradient(0deg,rgba(127,214,242,.07) 0 1px,transparent 1px 3px);color:#fff}
+.tbl tr.row:focus{outline:none}
+.tbl tr.row:focus td:first-child{box-shadow:inset 3px 0 0 var(--holo)}
+.tbl tfoot td{font-weight:600;border-bottom:none}
+.sub2{display:block;font-size:13px;color:var(--muted)}
+
+.pill{display:inline-block;font-size:13px;padding:2px 10px;border-radius:999px;font-weight:500;white-space:nowrap}
+.p-contactada{background:rgba(154,166,191,.18);color:#C9D1E2}
+.p-senada{background:rgba(227,163,59,.18);color:#F2C97A}
+.p-pagada{background:rgba(134,201,138,.16);color:#A9DDAC}
+.p-cancelada{background:rgba(232,116,107,.16);color:#F2A49D}
+.p-pendiente{background:rgba(216,102,44,.18);color:#F3AE85}
+.p-compensada{background:rgba(127,214,242,.14);color:#B3E6F7}
+
+.btn{font:inherit;font-weight:500;background:transparent;color:var(--cream);border:1px solid rgba(239,230,210,.25);border-radius:10px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--holo);color:var(--holo)}
+.btn.primary{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.btn.primary:hover{background:#cc3a31;border-color:#cc3a31;color:#fff}
+.btn.sm{padding:4px 10px;font-size:14px;border-radius:8px}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+input,select,textarea{font:inherit;color:var(--cream);background:rgba(8,14,34,.65);border:1px solid rgba(239,230,210,.18);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:60px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,.btn:focus-visible,.tab-btn:focus-visible{outline:2px solid var(--holo);outline-offset:1px}
+label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.inline-tc{display:flex;gap:6px}
+.inline-tc input{flex:1}
+.seg{display:inline-flex;border:1px solid rgba(239,230,210,.2);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;background:transparent;color:var(--muted);border:0;padding:7px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:rgba(239,230,210,.12);color:var(--cream)}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters input{width:220px}
+.filters select{width:auto}
+
+dialog{max-width:900px;width:calc(100% - 24px);color:var(--cream);background:var(--glass-strong);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:18px;padding:0}
+dialog::backdrop{background:rgba(5,8,20,.62)}
+.dlg-h{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dlg-b{padding:20px;max-height:68vh;overflow:auto}
+.dlg-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;align-items:center}
+.sec{margin-top:22px}
+.sec h3{font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:20px;margin:0 0 10px;color:var(--cream)}
+.pagos td{padding:6px 6px}
+.pagos input,.pagos select{padding:6px 8px}
+.sumline{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;font-size:15px}
+.sumline b{font-weight:600}
+.err{color:var(--bad);font-size:14px;margin:0}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.empty{padding:28px 8px;text-align:center;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--glass-strong);border:1px solid rgba(127,214,242,.4);color:var(--cream);padding:10px 18px;border-radius:12px;z-index:50;transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Informe (papel claro) */
+.paper{background:#FBF7EE;color:#2A1D14;border-radius:8px;padding:44px 48px;max-width:920px;margin:0 auto;font-family:'Barlow',system-ui,sans-serif;font-size:15px}
+.paper .pbrand{font-family:'Ultra',Georgia,serif;color:#B8322A;font-size:44px;line-height:1;margin:0}
+.paper .ptitle{margin:8px 0 18px;color:#5b4a3c;font-size:16px}
+.paper .pcinta{display:grid;gap:3px;margin-bottom:26px}
+.paper .pcinta i{display:block;height:6px}
+.paper h3{font-family:'Ultra',Georgia,serif;font-weight:400;font-size:20px;color:#1F2A44;margin:30px 0 10px}
+.paper .pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.paper .pk>div{border:1.5px solid #2A1D14;border-radius:8px;padding:10px 12px}
+.paper .pk .l{font-size:13px;color:#6b5a4b}
+.paper .pk .v{font-family:'Ultra',Georgia,serif;font-size:20px;margin-top:2px}
+.paper .pk .d{font-size:12px;color:#6b5a4b}
+.paper table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.paper th{text-align:left;font-weight:600;border-bottom:1.5px solid #2A1D14;padding:6px 8px;white-space:nowrap}
+.paper td{border-bottom:1px dashed #cdbb9e;padding:6px 8px}
+.paper .num{text-align:right;white-space:nowrap}
+.paper tfoot td{font-weight:600;border-top:1.5px solid #2A1D14;border-bottom:none}
+.paper .note{font-size:12.5px;color:#6b5a4b;margin-top:6px}
+.paper .pos{color:#2f7a3a}.paper .neg{color:#B8322A}
+.paper .blk{break-inside:avoid;page-break-inside:avoid}
+.paper .foot{margin-top:30px;padding-top:10px;border-top:1px dashed #cdbb9e;font-size:12px;color:#6b5a4b}
+
+@media (max-width:640px){
+  .wrap{padding:0 14px 100px}
+  .paper{padding:26px 18px}
+  .filters input{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .cinta i{animation:none;box-shadow:0 0 7px currentColor}
+  .holo:hover::after,.holo:focus-within::after{animation:none}
+}
+@page{size:A4;margin:14mm}
+@media print{
+  :root{padding:0}
+  body{background:#fff}
+  #sky,.mountains,.hero,.tabs,.no-print,.toast,.tab:not(#t-informe){display:none!important}
+  .wrap{padding:0;max-width:none}
+  .paper{padding:0;max-width:none;border-radius:0;background:#fff}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<svg class="mountains" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
+  <polygon fill="#0F1831" points="0,300 0,190 120,120 210,170 330,70 430,150 520,110 640,190 760,90 880,160 990,60 1110,150 1220,100 1330,170 1440,120 1440,300"/>
+  <polygon fill="rgba(239,230,210,.18)" points="330,70 305,92 322,88 340,98 356,86"/>
+  <polygon fill="rgba(239,230,210,.18)" points="990,60 962,86 982,80 998,92 1016,78"/>
+  <polygon fill="rgba(239,230,210,.14)" points="760,90 738,110 756,106 772,114 786,104"/>
+  <polygon fill="#0B1226" points="0,300 0,240 150,200 290,240 420,180 560,235 700,195 850,245 980,205 1120,250 1260,210 1440,240 1440,300"/>
+</svg>
+
+<div class="wrap">
+  <header class="hero">
+    <h1 class="brand">Casa Rossi</h1>
+    <p class="sub">Alquiler temporario en Rafaela, Santa Fe</p>
+    <div class="cinta" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button class="tab-btn" role="tab" data-tab="reservas" aria-selected="true">Reservas</button>
+    <button class="tab-btn" role="tab" data-tab="gastos" aria-selected="false">Gastos</button>
+    <button class="tab-btn" role="tab" data-tab="comisiones" aria-selected="false">Comisiones</button>
+    <button class="tab-btn" role="tab" data-tab="informe" aria-selected="false">Informe</button>
+    <button class="tab-btn" role="tab" data-tab="datos" aria-selected="false">Datos</button>
+  </nav>
+
+  <main>
+    <!-- RESERVAS -->
+    <section class="tab" id="t-reservas" role="tabpanel">
+      <div class="kpis" id="kpis"></div>
+      <div class="glass panel">
+        <div class="panel-h">
+          <h2>Reservas</h2>
+          <div class="filters">
+            <input type="search" id="fBuscar" placeholder="Buscar huésped" aria-label="Buscar huésped">
+            <select id="fEstado" aria-label="Filtrar por estado">
+              <option value="todas">Todas</option>
+              <option value="abiertas">Con saldo por cobrar</option>
+              <option value="contactada">Contactadas</option>
+              <option value="señada">Señadas</option>
+              <option value="pagada">Pagadas</option>
+              <option value="cancelada">Canceladas</option>
+            </select>
+            <button class="btn primary" id="btnNueva">Nueva reserva</button>
+          </div>
+        </div>
+        <div class="scroll"><table class="tbl" id="tblRes"></table></div>
+      </div>
+    </section>
+
+    <!-- GASTOS -->
+    <section class="tab" id="t-gastos" role="tabpanel" hidden>
+      <div class="glass panel">
+        <div class="panel-h"><h2 id="gTitulo">Cargar gasto</h2></div>
+        <div class="grid">
+          <label class="f">Fecha<input type="date" id="gFecha"></label>
+          <label class="f">Categoría
+            <select id="gCat"></select>
+          </label>
+          <label class="f">Detalle<input id="gDet" placeholder="Luz agosto"></label>
+          <label class="f">Moneda
+            <select id="gMon"><option value="ARS">Pesos</option><option value="USD">Dólares</option></select>
+          </label>
+          <label class="f">Monto<input id="gMonto" inputmode="decimal" placeholder="45.300,00"></label>
+          <label class="f" id="gTcWrap">TC BNA vendedor
+            <span class="inline-tc"><input id="gTc" inputmode="decimal"><button class="btn sm" type="button" id="gTcBtn">BNA</button></span>
+          </label>
+          <label class="f">Tipo
+            <select id="gTipo"><option value="variable">Variable</option><option value="fijo">Fijo</option></select>
+          </label>
+          <label class="f">Medio de pago<input id="gMedio" placeholder="Mutual, efectivo, billetera"></label>
+        </div>
+        <div class="btns" style="margin-top:14px">
+          <button class="btn primary" id="gGuardar">Guardar gasto</button>
+          <button class="btn" id="gCancelar" hidden>Cancelar edición</button>
+          <p class="err" id="gErr"></p>
+        </div>
+      </div>
+      <div class="glass panel">
+        <div class="panel-h">
+          <h2>Gastos</h2>
+          <select id="gFiltroQ" aria-label="Trimestre" style="width:auto"></select>
+        </div>
+        <div class="scroll"><table class="tbl" id="tblGas"></table></div>
+      </div>
+    </section>
+
+    <!-- COMISIONES -->
+    <section class="tab" id="t-comisiones" role="tabpanel" hidden>
+      <div class="kpis" id="kpisCom"></div>
+      <div class="glass panel">
+        <div class="panel-h">
+          <h2>Comisiones</h2>
+          <select id="cFiltro" aria-label="Filtrar comisiones" style="width:auto">
+            <option value="pendiente">Pendientes</option>
+            <option value="compensada">Compensadas</option>
+            <option value="todas">Todas</option>
+          </select>
+        </div>
+        <div class="scroll"><table class="tbl" id="tblCom"></table></div>
+      </div>
+    </section>
+
+    <!-- INFORME -->
+    <section class="tab" id="t-informe" role="tabpanel" hidden>
+      <div class="glass panel no-print" style="margin-bottom:16px">
+        <div class="panel-h" style="margin:0">
+          <h2>Informe trimestral</h2>
+          <div class="btns">
+            <select id="iQ" aria-label="Trimestre" style="width:auto"></select>
+            <button class="btn primary" id="iPrint">Imprimir o guardar PDF</button>
+          </div>
+        </div>
+      </div>
+      <div class="paper" id="paper"></div>
+    </section>
+
+    <!-- DATOS -->
+    <section class="tab" id="t-datos" role="tabpanel" hidden>
+      <div class="glass panel">
+        <h2>Tus datos</h2>
+        <p class="muted" style="max-width:70ch">Todo lo que cargás queda guardado en este navegador, en este dispositivo. Descargá un backup seguido: si borrás los datos del navegador o entrás desde otro equipo, se restaura desde ese archivo.</p>
+        <div class="btns" style="margin-top:14px">
+          <button class="btn primary" id="dBackup">Descargar backup</button>
+          <label class="btn" for="dFile" style="display:inline-block">Restaurar o importar archivo</label>
+          <input type="file" id="dFile" accept=".json,application/json" hidden>
+          <button class="btn" id="dCsvR">Exportar reservas CSV</button>
+          <button class="btn" id="dCsvG">Exportar gastos CSV</button>
+        </div>
+        <p class="muted small" id="dInfo" style="margin-top:14px"></p>
+        <div class="btns" style="margin-top:28px">
+          <button class="btn danger" id="dBorrar">Borrar todos los datos</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- DIALOG RESERVA -->
+<dialog id="dlg" aria-labelledby="dlgTit">
+  <div class="dlg-h">
+    <h2 id="dlgTit">Reserva</h2>
+    <button class="btn sm" type="button" id="dlgX" aria-label="Cerrar">Cerrar</button>
+  </div>
+  <div class="dlg-b">
+    <div class="grid">
+      <label class="f">Huésped<input data-k="huesped"></label>
+      <label class="f">Teléfono<input data-k="telefono" inputmode="tel"></label>
+      <label class="f">Plataforma
+        <select data-k="plataforma"><option value="">Sin dato</option><option>Booking</option><option>Airbnb</option><option>Directo</option><option>Otra</option></select>
+      </label>
+      <label class="f">Estado
+        <select data-k="estado"><option value="contactada">Contactada</option><option value="señada">Señada</option><option value="pagada">Pagada</option><option value="cancelada">Cancelada</option></select>
+      </label>
+      <label class="f">Check-in<input type="date" data-k="checkin"></label>
+      <label class="f">Check-out<input type="date" data-k="checkout"></label>
+      <label class="f">Fecha de reserva<input type="date" data-k="fechaReserva"></label>
+      <label class="f">Noches<input id="rNoches" disabled></label>
+    </div>
+
+    <div class="sec">
+      <h3>Precio</h3>
+      <div class="btns" style="margin-bottom:12px">
+        <span class="muted small">Se cobra en</span>
+        <span class="seg" id="segMon"><button type="button" data-m="ARS">Pesos</button><button type="button" data-m="USD">Dólares</button></span>
+      </div>
+      <div class="grid">
+        <label class="f">Total USD<input data-k="totalUSD" inputmode="decimal"></label>
+        <label class="f ars-only">TC BNA vendedor del día de reserva
+          <span class="inline-tc"><input data-k="tcReserva" inputmode="decimal"><button class="btn sm" type="button" id="rTcBtn">BNA</button></span>
+        </label>
+        <label class="f ars-only">Pesos pactados<input data-k="pesos" inputmode="decimal"></label>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Pagos</h3>
+      <div class="scroll"><table class="tbl pagos" id="tblPagos"></table></div>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn sm" type="button" id="pSena">Agregar seña 50%</button>
+        <button class="btn sm" type="button" id="pSaldo">Agregar saldo</button>
+        <button class="btn sm" type="button" id="pOtro">Agregar pago</button>
+      </div>
+      <div class="sumline" id="pSum"></div>
+    </div>
+
+    <div class="sec">
+      <h3>Comisión de administración</h3>
+      <div class="grid">
+        <label class="f">Porcentaje<input data-k="comPct" inputmode="decimal"></label>
+        <label class="f">Comisión USD<input id="rCom" disabled></label>
+        <label class="f">Estado
+          <select data-k="comEstado"><option value="pendiente">Pendiente</option><option value="compensada">Compensada</option></select>
+        </label>
+        <label class="f">Fecha compensada<input type="date" data-k="comFecha"></label>
+      </div>
+    </div>
+
+    <div class="sec">
+      <label class="f">Comentarios<textarea data-k="comentarios"></textarea></label>
+    </div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn danger" type="button" id="dlgDel">Eliminar reserva</button>
+    <p class="err" id="dlgErr"></p>
+    <div class="btns">
+      <button class="btn" type="button" id="dlgCancel">Cancelar</button>
+      <button class="btn primary" type="button" id="dlgSave">Guardar reserva</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+const LS='casa_rossi_v1';
+const CATS=['Limpieza','Lavandería','Servicios (luz, gas, agua, internet)','Impuestos y tasas','Mantenimiento y reparaciones','Insumos y amenities','Comisiones de plataforma','Otros'];
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+
+/* ---------- datos ---------- */
+function emptyDb(){return {app:'casa-rossi',v:1,reservas:[],gastos:[]}}
+function load(){try{const x=JSON.parse(localStorage.getItem(LS));if(x&&Array.isArray(x.reservas))return x}catch(e){}return emptyDb()}
+let db=load();
+function save(){try{localStorage.setItem(LS,JSON.stringify(db));return true}catch(e){toast('No se pudo guardar en este navegador. Descargá un backup.');return false}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- utilidades ---------- */
+const nf2=new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nf0=new Intl.NumberFormat('es-AR',{maximumFractionDigits:0});
+const nf1=new Intl.NumberFormat('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const usd=n=>'USD '+nf2.format(r2(n||0));
+const ars=n=>'$ '+nf2.format(r2(n||0));
+const r2=n=>Math.round((+n+Number.EPSILON)*100)/100;
+const sum=a=>a.reduce((s,x)=>s+(+x||0),0);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function parseNum(v){
+  if(typeof v==='number')return v;
+  let s=String(v==null?'':v).trim().replace(/\s/g,'').replace(/\$/g,'');
+  if(!s)return 0;
+  if(s.includes(','))s=s.replace(/\./g,'').replace(/,/g,'.');
+  else s=s.replace(/\d{1,3}(\.\d{3})+(?![\d.])/g,m=>m.replace(/\./g,''));
+  if(!/^[0-9+\-*/().]+$/.test(s))return NaN;
+  try{const x=Function('"use strict";return ('+s+')')();return isFinite(x)?x:NaN}catch(e){return NaN}
+}
+const numStr=n=>(n===''||n==null||isNaN(n))?'':nf2.format(n).replace(/,00$/,'');
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const toD=s=>{const [y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)};
+const days=(a,b)=>Math.round((toD(b)-toD(a))/864e5);
+const addDays=(s,n)=>{const d=new Date(toD(s)+n*864e5);return d.toISOString().slice(0,10)};
+const fd=s=>{if(!s)return '';const [y,m,d]=s.split('-');return d+'/'+m+'/'+y.slice(2)};
+const fdl=s=>{if(!s)return '';const [y,m,d]=s.split('-');return +d+' de '+MESES[+m-1]+' de '+y};
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),2600)}
+function download(name,text,type){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+
+/* ---------- cotización BNA ---------- */
+let tcMap=null,tcLoading=null;
+function loadTC(){
+  if(tcMap)return Promise.resolve(tcMap);
+  if(!tcLoading)tcLoading=fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial')
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(arr=>{tcMap={};arr.forEach(x=>{if(x&&x.fecha&&x.venta)tcMap[String(x.fecha).slice(0,10)]=+x.venta});return tcMap})
+    .catch(()=>{tcLoading=null;return null});
+  return tcLoading;
+}
+async function getTC(iso){
+  if(!iso)return null;
+  const map=await loadTC();
+  if(map){for(let i=0;i<8;i++){const d=addDays(iso,-i);if(map[d])return map[d]}}
+  if(days(iso,todayISO())<=3){
+    try{const r=await fetch('https://dolarapi.com/v1/dolares/oficial');if(r.ok){const j=await r.json();if(j&&j.venta)return +j.venta}}catch(e){}
+  }
+  return null;
+}
+
+/* ---------- cálculos ---------- */
+const sign=p=>p.tipo==='Reintegro'?-1:1;
+function tcRes(r){const t=+r.tcReserva;if(t)return t;const p=+r.pesos,u=+r.totalUSD;return p&&u?p/u:0}
+function pFecha(r,p){if(p.fecha)return p.fecha;if(!p.historico)return '';const t=todayISO();return r.checkin&&r.checkin<=t?r.checkin:t}
+function pUSD(r,p){const m=+p.monto||0;if(p.moneda==='USD')return sign(p)*m;const t=+p.tc||tcRes(r);return t?sign(p)*m/t:0}
+function pDif(r,p){if(p.moneda!=='ARS'||p.historico)return 0;const tr=tcRes(r),t=+p.tc;if(!tr||!t)return 0;return sign(p)*((+p.monto||0)/t-(+p.monto||0)/tr)}
+function calc(r,hasta){
+  const pagos=(r.pagos||[]).filter(p=>{if(!hasta)return true;const f=pFecha(r,p);return f&&f<=hasta});
+  const cobUSD=sum(pagos.map(p=>pUSD(r,p)));
+  let faltaUSD=0,faltaARS=null;
+  if(r.moneda==='USD'){faltaUSD=Math.max(0,(+r.totalUSD||0)-cobUSD)}
+  else{
+    const tr=tcRes(r);
+    const cobARS=sum(pagos.map(p=>p.moneda==='ARS'?sign(p)*(+p.monto||0):sign(p)*(+p.monto||0)*tr));
+    faltaARS=Math.max(0,(+r.pesos||0)-cobARS);if(faltaARS<0.5)faltaARS=0;
+    faltaUSD=tr?faltaARS/tr:0;
+  }
+  if(faltaUSD<0.01)faltaUSD=0;
+  if(r.estado==='cancelada'){faltaUSD=0;if(faltaARS!==null)faltaARS=0}
+  const noches=(r.checkin&&r.checkout)?Math.max(0,days(r.checkin,r.checkout)):0;
+  const comUSD=r.estado==='cancelada'?0:(+r.totalUSD||0)*(+r.comPct||0)/100;
+  return {cobUSD,faltaUSD,faltaARS,noches,comUSD,dif:sum(pagos.map(p=>pDif(r,p)))};
+}
+const confirmada=r=>r.estado==='señada'||r.estado==='pagada';
+
+/* ---------- trimestres ---------- */
+const qOf=iso=>({y:+iso.slice(0,4),q:Math.floor((+iso.slice(5,7)-1)/3)+1});
+function qRange(y,q){const m1=(q-1)*3+1;const start=y+'-'+String(m1).padStart(2,'0')+'-01';const nx=q===4?(y+1)+'-01-01':y+'-'+String(m1+3).padStart(2,'0')+'-01';return {start,end:addDays(nx,-1),next:nx}}
+const qKey=(y,q)=>y+'-'+q;
+const qLabel=(y,q)=>'T'+q+' '+y+' ('+MESES[(q-1)*3]+' a '+MESES[(q-1)*3+2]+')';
+function prevQ(y,q){return q===1?{y:y-1,q:4}:{y,q:q-1}}
+function quarters(){
+  const fechas=[todayISO()];
+  db.reservas.forEach(r=>{if(r.checkin)fechas.push(r.checkin);(r.pagos||[]).forEach(p=>p.fecha&&fechas.push(p.fecha))});
+  db.gastos.forEach(g=>g.fecha&&fechas.push(g.fecha));
+  fechas.sort();
+  let a=qOf(fechas[0]);const b=qOf(fechas[fechas.length-1]);const out=[];
+  while(a.y<b.y||(a.y===b.y&&a.q<=b.q)){out.push({...a});a=a.q===4?{y:a.y+1,q:1}:{y:a.y,q:a.q+1}}
+  return out.reverse();
+}
+function gUSD(g){const m=+g.monto||0;if(g.moneda==='USD')return m;return +g.tc?m/(+g.tc):0}
+
+function metrics(y,q){
+  const {start,end,next}=qRange(y,q);const diasQ=days(start,next);
+  const inQ=d=>d&&d>=start&&d<=end;
+  let dev=0,noches=0,devN=0,com=0,sinOut=0,perc=0,dif=0;const det=[];const antic=[],sena=[];
+  db.reservas.forEach(r=>{
+    if(!r.checkin||r.estado==='contactada')return;
+    const c=calc(r);let share=0,nq=0,base=+r.totalUSD||0;
+    if(r.estado==='cancelada'){base=c.cobUSD;share=inQ(r.checkin)?1:0}
+    else if(c.noches>0){const a=r.checkin>start?r.checkin:start,b=r.checkout<next?r.checkout:next;nq=Math.max(0,days(a,b));share=nq/c.noches}
+    else{share=inQ(r.checkin)?1:0;if(share)sinOut++}
+    const d=base*share;
+    let cobQ=0,difQ=0;
+    (r.pagos||[]).forEach(p=>{if(inQ(pFecha(r,p))){cobQ+=pUSD(r,p);difQ+=pDif(r,p)}});
+    perc+=cobQ;dif+=difQ;
+    if(share>0){dev+=d;noches+=nq;if(nq)devN+=d;com+=c.comUSD*share}
+    if(share>0||Math.abs(cobQ)>0.004)det.push({r,nq,d,cobQ,difQ,share});
+    if(inQ(r.checkin)&&r.estado!=='cancelada'){
+      if(r.fechaReserva)antic.push(days(r.fechaReserva,r.checkin));
+      const fs=(r.pagos||[]).filter(p=>p.fecha&&!p.historico).map(p=>p.fecha).sort();
+      if(fs.length>=2)sena.push(days(fs[0],fs[fs.length-1]));
+    }
+  });
+  const gastos=db.gastos.filter(g=>inQ(g.fecha));
+  const porCat={};gastos.forEach(g=>{porCat[g.cat]=(porCat[g.cat]||0)+gUSD(g)});
+  const gTot=sum(gastos.map(gUSD));
+  let senasFut=0,pend=0,comPend=0;
+  db.reservas.forEach(r=>{
+    if(!r.checkin||r.estado==='contactada'||r.estado==='cancelada')return;
+    const c=calc(r,end);
+    const known=r.fechaReserva?r.fechaReserva<=end:(r.checkin<=end||c.cobUSD>0);
+    if(r.checkin>end&&c.cobUSD>0)senasFut+=c.cobUSD;
+    if(known)pend+=c.faltaUSD;
+    if(r.checkin<=end&&(r.comEstado!=='compensada'||(r.comFecha&&r.comFecha>end)))comPend+=c.comUSD;
+  });
+  const avg=a=>a.length?sum(a)/a.length:null;
+  det.sort((a,b)=>a.r.checkin<b.r.checkin?-1:1);
+  return {y,q,start,end,diasQ,dev,noches,devN,com,sinOut,perc,dif,det,gastos,porCat,gTot,
+    res:dev-com-gTot+dif,ocup:noches/diasQ,tarifa:noches?devN/noches:null,
+    antic:avg(antic),senaSaldo:avg(sena),senasFut,pend,comPend};
+}
+
+/* ---------- pestañas ---------- */
+$$('.tab-btn').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function showTab(t){
+  $$('.tab-btn').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t?'true':'false'));
+  $$('.tab').forEach(s=>s.hidden=s.id!=='t-'+t);
+  if(t==='informe')renderInforme();
+}
+
+/* ---------- resumen ---------- */
+function renderKpis(){
+  const hoy=todayISO();const cur=qOf(hoy);const m=metrics(cur.y,cur.q);
+  const conf=db.reservas.filter(confirmada);
+  const porCobrar=sum(conf.map(r=>calc(r).faltaUSD));
+  const prox=db.reservas.filter(r=>r.checkin>=hoy&&r.estado!=='cancelada').sort((a,b)=>a.checkin<b.checkin?-1:1)[0];
+  const comP=sum(db.reservas.filter(r=>r.estado!=='cancelada'&&r.estado!=='contactada'&&r.comEstado!=='compensada'&&r.checkin<=hoy).map(r=>calc(r).comUSD));
+  $('#kpis').innerHTML=
+    kpi('Resultado T'+cur.q+' '+cur.y,usd(m.res),m.noches?'Ocupación '+nf0.format(m.ocup*100)+'%':'Cargá los check-out para ver la ocupación')+
+    kpi('Por cobrar',usd(porCobrar),'Saldos de reservas señadas')+
+    kpi('Próxima llegada',prox?fd(prox.checkin):'Sin reservas',prox?esc(prox.huesped):'')+
+    kpi('Comisiones pendientes',usd(comP),'De estadías ya realizadas');
+}
+const kpi=(l,v,h)=>'<div class="glass kpi holo" tabindex="0"><div class="lbl">'+l+'</div><div class="val">'+v+'</div><div class="hint">'+(h||'&nbsp;')+'</div></div>';
+
+/* ---------- reservas ---------- */
+const pillE=e=>'<span class="pill p-'+(e==='señada'?'senada':e)+'">'+(e?e[0].toUpperCase()+e.slice(1):'')+'</span>';
+function renderReservas(){
+  const q=$('#fBuscar').value.trim().toLowerCase(),f=$('#fEstado').value;
+  let rs=db.reservas.slice().sort((a,b)=>(a.checkin||'')<(b.checkin||'')?1:-1);
+  if(q)rs=rs.filter(r=>(r.huesped||'').toLowerCase().includes(q));
+  if(f==='abiertas')rs=rs.filter(r=>confirmada(r)&&calc(r).faltaUSD>0);
+  else if(f!=='todas')rs=rs.filter(r=>r.estado===f);
+  const t=$('#tblRes');
+  if(!db.reservas.length){t.innerHTML='<tr><td class="empty">Cargá tu primera reserva o importá el archivo de precarga desde Datos.</td></tr>';return}
+  if(!rs.length){t.innerHTML='<tr><td class="empty">Ninguna reserva coincide con el filtro.</td></tr>';return}
+  t.innerHTML='<thead><tr><th>Check-in</th><th>Huésped</th><th class="num">Total</th><th class="num">Cobrado</th><th class="num">Falta cobrar</th><th>Estado</th><th>Comisión</th></tr></thead><tbody>'+
+  rs.map(r=>{const c=calc(r);
+    const falta=r.estado==='contactada'||r.estado==='cancelada'?'<span class="muted">—</span>':(c.faltaARS!==null?(c.faltaARS?ars(c.faltaARS)+'<span class="sub2">'+usd(c.faltaUSD)+' al TC de reserva</span>':'—'):(c.faltaUSD?usd(c.faltaUSD):'—'));
+    return '<tr class="row" tabindex="0" data-id="'+r.id+'"><td>'+fd(r.checkin)+'<span class="sub2">'+(c.noches?c.noches+(c.noches===1?' noche':' noches'):'Sin check-out')+'</span></td>'+
+    '<td>'+esc(r.huesped)+'<span class="sub2">'+esc(r.plataforma||'Plataforma sin dato')+'</span></td>'+
+    '<td class="num">'+usd(r.totalUSD)+'</td><td class="num">'+usd(c.cobUSD)+'</td><td class="num">'+falta+'</td>'+
+    '<td>'+pillE(r.estado)+'</td><td>'+(r.estado==='cancelada'||r.estado==='contactada'?'<span class="muted">—</span>':'<span class="pill p-'+r.comEstado+'">'+(r.comEstado==='compensada'?'Compensada':'Pendiente')+'</span>')+'</td></tr>'}).join('')+'</tbody>';
+}
+$('#tblRes').addEventListener('click',e=>{const tr=e.target.closest('tr.row');if(tr)openRes(tr.dataset.id)});
+$('#tblRes').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr.row');if(tr)openRes(tr.dataset.id)}});
+$('#fBuscar').addEventListener('input',renderReservas);
+$('#fEstado').addEventListener('change',renderReservas);
+$('#btnNueva').addEventListener('click',()=>openRes(null));
+
+/* ---------- editor de reserva ---------- */
+const dlg=$('#dlg');let ed=null,isNew=false;
+function newRes(){return {id:uid(),huesped:'',telefono:'',plataforma:'',checkin:'',checkout:'',fechaReserva:todayISO(),moneda:'ARS',totalUSD:'',tcReserva:'',pesos:'',estado:'contactada',comentarios:'',pagos:[],comPct:10,comEstado:'pendiente',comFecha:''}}
+function openRes(id){
+  const r=id&&db.reservas.find(x=>x.id===id);isNew=!r;
+  ed=r?JSON.parse(JSON.stringify(r)):newRes();
+  $('#dlgTit').textContent=isNew?'Nueva reserva':'Reserva de '+(ed.huesped||'');
+  $('#dlgDel').hidden=isNew;$('#dlgErr').textContent='';
+  $$('#dlg [data-k]').forEach(el=>{const k=el.dataset.k,v=ed[k];el.value=(typeof v==='number')?numStr(v):(v==null?'':v)});
+  setMon(ed.moneda);renderPagos();refreshDlg();
+  dlg.showModal();
+  if(isNew&&ed.fechaReserva)autoTcReserva();
+}
+function setMon(m){ed.moneda=m;$$('#segMon button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m?'true':'false'));$$('.ars-only').forEach(el=>el.hidden=m!=='ARS')}
+$$('#segMon button').forEach(b=>b.addEventListener('click',()=>{setMon(b.dataset.m);renderPagos();refreshDlg()}));
+function setField(k,v){ed[k]=v;const el=$('#dlg [data-k="'+k+'"]');if(el)el.value=(typeof v==='number')?numStr(v):v}
+$$('#dlg [data-k]').forEach(el=>{
+  const ev=el.tagName==='SELECT'||el.type==='date'?'change':'input';
+  el.addEventListener(ev,()=>{
+    const k=el.dataset.k;
+    if(['totalUSD','tcReserva','pesos','comPct'].includes(k)){
+      const n=parseNum(el.value);ed[k]=isNaN(n)?el.value:n;
+      if(ed.moneda==='ARS'){
+        const u=+ed.totalUSD,t=+ed.tcReserva,p=+ed.pesos;
+        if((k==='totalUSD'||k==='tcReserva')&&u&&t)setField('pesos',r2(u*t));
+        if(k==='pesos'&&u&&p)setField('tcReserva',Math.round(p/u*10000)/10000);
+      }
+      renderPagos();
+    }else ed[k]=el.value;
+    if(k==='fechaReserva'&&el.value)autoTcReserva(true);
+    if(k==='comEstado'&&el.value==='compensada'&&!ed.comFecha)setField('comFecha',todayISO());
+    refreshDlg();
+  });
+});
+async function autoTcReserva(force){
+  if(ed.moneda!=='ARS'||!ed.fechaReserva)return;
+  if(ed.tcReserva&&!force)return;
+  const t=await getTC(ed.fechaReserva);
+  if(t&&ed){setField('tcReserva',t);if(+ed.totalUSD)setField('pesos',r2(ed.totalUSD*t));renderPagos();refreshDlg()}
+}
+$('#rTcBtn').addEventListener('click',async()=>{if(!ed.fechaReserva){$('#dlgErr').textContent='Cargá la fecha de reserva para buscar la cotización.';return}
+  const t=await getTC(ed.fechaReserva);if(t){setField('tcReserva',t);if(+ed.totalUSD)setField('pesos',r2(ed.totalUSD*t));renderPagos();refreshDlg()}else $('#dlgErr').textContent='No se pudo traer la cotización. Cargala a mano.'});
+function refreshDlg(){
+  const c=calc(ed);
+  $('#rNoches').value=c.noches?c.noches:(ed.checkin&&ed.checkout?'Revisá las fechas':'');
+  $('#rCom').value=usd(c.comUSD);
+  $('#pSum').innerHTML='<span>Cobrado <b>'+usd(c.cobUSD)+'</b></span><span>Falta <b>'+(c.faltaARS!==null?ars(c.faltaARS)+' ('+usd(c.faltaUSD)+')':usd(c.faltaUSD))+'</b></span><span>Diferencia de cotización <b class="'+(c.dif<0?'neg':c.dif>0?'pos':'')+'">'+usd(c.dif)+'</b></span>';
+}
+function renderPagos(){
+  const t=$('#tblPagos');
+  if(!ed.pagos.length){t.innerHTML='<tr><td class="empty">Sin pagos cargados.</td></tr>';return}
+  t.innerHTML='<thead><tr><th>Fecha</th><th>Concepto</th><th>Moneda</th><th>Monto</th><th>TC BNA vendedor</th><th>Cuenta</th><th class="num">USD</th><th></th></tr></thead><tbody>'+
+  ed.pagos.map((p,i)=>'<tr data-i="'+i+'">'+
+    '<td><input type="date" data-p="fecha" value="'+esc(p.fecha)+'" aria-label="Fecha del pago">'+(p.historico&&!p.fecha?'<span class="sub2">Histórico sin fecha</span>':'')+'</td>'+
+    '<td><select data-p="tipo" aria-label="Concepto">'+['Seña','Saldo','Pago','Reintegro'].map(o=>'<option'+(p.tipo===o?' selected':'')+'>'+o+'</option>').join('')+'</select></td>'+
+    '<td><select data-p="moneda" aria-label="Moneda"><option value="ARS"'+(p.moneda==='ARS'?' selected':'')+'>Pesos</option><option value="USD"'+(p.moneda==='USD'?' selected':'')+'>USD</option></select></td>'+
+    '<td><input data-p="monto" inputmode="decimal" value="'+esc(numStr(p.monto))+'" aria-label="Monto" style="min-width:110px"></td>'+
+    '<td>'+(p.moneda==='ARS'?'<span class="inline-tc"><input data-p="tc" inputmode="decimal" value="'+esc(numStr(p.tc))+'" aria-label="Tipo de cambio" style="min-width:80px"><button class="btn sm" type="button" data-tcbtn="'+i+'">BNA</button></span>':'<span class="muted">—</span>')+'</td>'+
+    '<td><input data-p="cuenta" value="'+esc(p.cuenta)+'" aria-label="Cuenta" placeholder="Mutual" style="min-width:90px"></td>'+
+    '<td class="num">'+usd(pUSD(ed,p))+'</td>'+
+    '<td><button class="btn sm danger" type="button" data-del="'+i+'" aria-label="Quitar pago">Quitar</button></td></tr>').join('')+'</tbody>';
+}
+$('#tblPagos').addEventListener('change',async e=>{
+  const tr=e.target.closest('tr[data-i]');if(!tr)return;const p=ed.pagos[+tr.dataset.i],k=e.target.dataset.p;if(!k)return;
+  if(k==='monto'||k==='tc'){const n=parseNum(e.target.value);p[k]=isNaN(n)?0:n}else p[k]=e.target.value;
+  if(k==='fecha'&&p.fecha){p.historico=false;if(p.moneda==='ARS'){const t=await getTC(p.fecha);if(t)p.tc=t}}
+  if(k==='moneda'&&p.moneda==='ARS'&&!p.tc&&p.fecha){const t=await getTC(p.fecha);if(t)p.tc=t}
+  renderPagos();refreshDlg();
+});
+$('#tblPagos').addEventListener('click',async e=>{
+  const d=e.target.closest('[data-del]');if(d){ed.pagos.splice(+d.dataset.del,1);renderPagos();refreshDlg();return}
+  const b=e.target.closest('[data-tcbtn]');if(b){const p=ed.pagos[+b.dataset.tcbtn];if(!p.fecha){$('#dlgErr').textContent='Cargá la fecha del pago para buscar la cotización.';return}
+    const t=await getTC(p.fecha);if(t){p.tc=t;renderPagos();refreshDlg()}else $('#dlgErr').textContent='No se pudo traer la cotización. Cargala a mano.'}
+});
+async function addPago(tipo){
+  const hoy=todayISO();const p={id:uid(),fecha:hoy,tipo,moneda:ed.moneda,monto:0,tc:'',cuenta:'',historico:false};
+  const c=calc(ed);
+  if(tipo==='Seña')p.monto=ed.moneda==='ARS'?r2((+ed.pesos||0)/2):r2((+ed.totalUSD||0)/2);
+  if(tipo==='Saldo')p.monto=ed.moneda==='ARS'?r2(c.faltaARS||0):r2(c.faltaUSD||0);
+  ed.pagos.push(p);renderPagos();refreshDlg();
+  if(p.moneda==='ARS'){const t=await getTC(hoy);if(t){p.tc=t;renderPagos();refreshDlg()}}
+}
+$('#pSena').addEventListener('click',()=>addPago('Seña'));
+$('#pSaldo').addEventListener('click',()=>addPago('Saldo'));
+$('#pOtro').addEventListener('click',()=>addPago('Pago'));
+function closeDlg(){dlg.close();ed=null}
+$('#dlgX').addEventListener('click',closeDlg);$('#dlgCancel').addEventListener('click',closeDlg);
+dlg.addEventListener('cancel',()=>{ed=null});
+$('#dlgSave').addEventListener('click',()=>{
+  const err=$('#dlgErr');err.textContent='';
+  ['totalUSD','tcReserva','pesos','comPct'].forEach(k=>{if(typeof ed[k]==='string'&&ed[k]!==''){const n=parseNum(ed[k]);ed[k]=isNaN(n)?NaN:n}});
+  if(!ed.huesped.trim()){err.textContent='Cargá el nombre del huésped.';return}
+  if(!ed.checkin){err.textContent='Cargá la fecha de check-in.';return}
+  if(ed.checkout&&ed.checkout<=ed.checkin){err.textContent='El check-out tiene que ser posterior al check-in.';return}
+  if(!(+ed.totalUSD>0)){err.textContent='Cargá el total en USD.';return}
+  if(ed.moneda==='ARS'&&isNaN(ed.pesos)){err.textContent='Revisá el monto en pesos.';return}
+  if(ed.pagos.some(p=>!(+p.monto>0))){err.textContent='Hay un pago sin monto. Completalo o quitalo.';return}
+  if(ed.pagos.some(p=>p.moneda==='ARS'&&!(+p.tc>0)&&!p.historico)){err.textContent='Hay un pago en pesos sin cotización. Tocá BNA o cargala a mano.';return}
+  if(ed.estado!=='cancelada'){const c=calc(ed);
+    if(c.cobUSD>0.004)ed.estado=c.faltaUSD>0?'señada':'pagada';
+    else if(ed.estado!=='contactada')ed.estado='contactada';}
+  const i=db.reservas.findIndex(x=>x.id===ed.id);
+  if(i>=0)db.reservas[i]=ed;else db.reservas.push(ed);
+  if(save()){toast('Reserva guardada');closeDlg();renderAll()}
+});
+$('#dlgDel').addEventListener('click',()=>{
+  if(!confirm('¿Eliminar la reserva de '+ed.huesped+'? No se puede deshacer.'))return;
+  db.reservas=db.reservas.filter(x=>x.id!==ed.id);save();toast('Reserva eliminada');closeDlg();renderAll();
+});
+
+/* ---------- gastos ---------- */
+$('#gCat').innerHTML=CATS.map(c=>'<option>'+c+'</option>').join('');
+let gEdit=null;
+function resetG(){gEdit=null;$('#gFecha').value=todayISO();$('#gCat').selectedIndex=0;['#gDet','#gMonto','#gTc','#gMedio'].forEach(s=>$(s).value='');$('#gMon').value='ARS';$('#gTipo').value='variable';$('#gTitulo').textContent='Cargar gasto';$('#gCancelar').hidden=true;$('#gErr').textContent='';toggleGTc();autoGTc()}
+function toggleGTc(){$('#gTcWrap').hidden=$('#gMon').value!=='ARS'}
+async function autoGTc(){if($('#gMon').value!=='ARS'||!$('#gFecha').value)return;const t=await getTC($('#gFecha').value);if(t)$('#gTc').value=numStr(t)}
+$('#gMon').addEventListener('change',()=>{toggleGTc();if(!$('#gTc').value)autoGTc()});
+$('#gFecha').addEventListener('change',autoGTc);
+$('#gTcBtn').addEventListener('click',async()=>{const t=await getTC($('#gFecha').value);if(t)$('#gTc').value=numStr(t);else $('#gErr').textContent='No se pudo traer la cotización. Cargala a mano.'});
+$('#gGuardar').addEventListener('click',()=>{
+  const e=$('#gErr');e.textContent='';
+  const g={id:gEdit||uid(),fecha:$('#gFecha').value,cat:$('#gCat').value,det:$('#gDet').value.trim(),moneda:$('#gMon').value,monto:parseNum($('#gMonto').value),tc:$('#gMon').value==='ARS'?parseNum($('#gTc').value):'',tipo:$('#gTipo').value,medio:$('#gMedio').value.trim()};
+  if(!g.fecha){e.textContent='Cargá la fecha.';return}
+  if(!(g.monto>0)){e.textContent='Revisá el monto.';return}
+  if(g.moneda==='ARS'&&!(g.tc>0)){e.textContent='Falta la cotización. Tocá BNA o cargala a mano.';return}
+  const i=db.gastos.findIndex(x=>x.id===g.id);if(i>=0)db.gastos[i]=g;else db.gastos.push(g);
+  if(save()){toast(gEdit?'Gasto actualizado':'Gasto guardado');resetG();renderAll()}
+});
+$('#gCancelar').addEventListener('click',resetG);
+function renderGastos(){
+  const sel=$('#gFiltroQ');const prev=sel.value;const qs=quarters();
+  sel.innerHTML='<option value="todos">Todos</option>'+qs.map(x=>'<option value="'+qKey(x.y,x.q)+'">'+qLabel(x.y,x.q)+'</option>').join('');
+  sel.value=prev&&[...sel.options].some(o=>o.value===prev)?prev:(qs[0]?qKey(qs[0].y,qs[0].q):'todos');
+  let gs=db.gastos.slice().sort((a,b)=>a.fecha<b.fecha?1:-1);
+  if(sel.value!=='todos'){const [y,q]=sel.value.split('-').map(Number);const {start,end}=qRange(y,q);gs=gs.filter(g=>g.fecha>=start&&g.fecha<=end)}
+  const t=$('#tblGas');
+  if(!gs.length){t.innerHTML='<tr><td class="empty">No hay gastos en este período. Cargá el primero arriba.</td></tr>';return}
+  t.innerHTML='<thead><tr><th>Fecha</th><th>Categoría</th><th>Detalle</th><th class="num">Monto</th><th class="num">USD</th><th>Tipo</th><th></th></tr></thead><tbody>'+
+  gs.map(g=>'<tr><td>'+fd(g.fecha)+'</td><td>'+esc(g.cat)+'</td><td>'+esc(g.det)+(g.medio?'<span class="sub2">'+esc(g.medio)+'</span>':'')+'</td>'+
+  '<td class="num">'+(g.moneda==='ARS'?ars(g.monto)+'<span class="sub2">TC '+numStr(g.tc)+'</span>':usd(g.monto))+'</td><td class="num">'+usd(gUSD(g))+'</td><td>'+(g.tipo==='fijo'?'Fijo':'Variable')+'</td>'+
+  '<td class="btns"><button class="btn sm" data-ge="'+g.id+'">Editar</button><button class="btn sm danger" data-gd="'+g.id+'">Borrar</button></td></tr>').join('')+
+  '</tbody><tfoot><tr><td colspan="4">Total</td><td class="num">'+usd(sum(gs.map(gUSD)))+'</td><td colspan="2"></td></tr></tfoot>';
+}
+$('#gFiltroQ').addEventListener('change',renderGastos);
+$('#tblGas').addEventListener('click',e=>{
+  const ed_=e.target.closest('[data-ge]'),dl=e.target.closest('[data-gd]');
+  if(ed_){const g=db.gastos.find(x=>x.id===ed_.dataset.ge);gEdit=g.id;$('#gFecha').value=g.fecha;$('#gCat').value=g.cat;$('#gDet').value=g.det;$('#gMon').value=g.moneda;$('#gMonto').value=numStr(g.monto);$('#gTc').value=numStr(g.tc);$('#gTipo').value=g.tipo;$('#gMedio').value=g.medio||'';$('#gTitulo').textContent='Editar gasto';$('#gCancelar').hidden=false;toggleGTc();window.scrollTo({top:0,behavior:'smooth'})}
+  if(dl&&confirm('¿Borrar este gasto?')){db.gastos=db.gastos.filter(x=>x.id!==dl.dataset.gd);save();toast('Gasto borrado');renderAll()}
+});
+
+/* ---------- comisiones ---------- */
+function renderComisiones(){
+  const base=db.reservas.filter(r=>r.estado!=='cancelada'&&r.estado!=='contactada');
+  const hoy=todayISO(),y=hoy.slice(0,4);
+  const pendReal=sum(base.filter(r=>r.comEstado!=='compensada'&&r.checkin<=hoy).map(r=>calc(r).comUSD));
+  const pendFut=sum(base.filter(r=>r.comEstado!=='compensada'&&r.checkin>hoy).map(r=>calc(r).comUSD));
+  const compAnio=sum(base.filter(r=>r.comEstado==='compensada'&&(r.comFecha||r.checkin).startsWith(y)).map(r=>calc(r).comUSD));
+  $('#kpisCom').innerHTML=kpi('Pendiente de compensar',usd(pendReal),'Estadías ya realizadas')+kpi('A devengar',usd(pendFut),'Reservas futuras confirmadas')+kpi('Compensado en '+y,usd(compAnio),'');
+  const f=$('#cFiltro').value;
+  let rs=base.slice().sort((a,b)=>a.checkin<b.checkin?1:-1);
+  if(f!=='todas')rs=rs.filter(r=>(r.comEstado||'pendiente')===f);
+  const t=$('#tblCom');
+  if(!rs.length){t.innerHTML='<tr><td class="empty">No hay comisiones en esta vista.</td></tr>';return}
+  t.innerHTML='<thead><tr><th>Check-in</th><th>Huésped</th><th class="num">Total reserva</th><th class="num">Comisión</th><th>Estado</th><th></th></tr></thead><tbody>'+
+  rs.map(r=>{const c=calc(r);return '<tr><td>'+fd(r.checkin)+'</td><td>'+esc(r.huesped)+'</td><td class="num">'+usd(r.totalUSD)+'</td><td class="num">'+usd(c.comUSD)+'<span class="sub2">'+numStr(+r.comPct)+'%</span></td>'+
+  '<td><span class="pill p-'+r.comEstado+'">'+(r.comEstado==='compensada'?'Compensada':'Pendiente')+'</span>'+(r.comFecha?'<span class="sub2">'+fd(r.comFecha)+'</span>':'')+'</td>'+
+  '<td>'+(r.comEstado==='compensada'?'<button class="btn sm" data-cu="'+r.id+'">Marcar pendiente</button>':'<button class="btn sm" data-cc="'+r.id+'">Marcar compensada hoy</button>')+'</td></tr>'}).join('')+
+  '</tbody><tfoot><tr><td colspan="3">Total</td><td class="num">'+usd(sum(rs.map(r=>calc(r).comUSD)))+'</td><td colspan="2"></td></tr></tfoot>';
+}
+$('#cFiltro').addEventListener('change',renderComisiones);
+$('#tblCom').addEventListener('click',e=>{
+  const cc=e.target.closest('[data-cc]'),cu=e.target.closest('[data-cu]');
+  const r=db.reservas.find(x=>x.id===(cc||cu||{}).dataset?.[cc?'cc':'cu']);if(!r)return;
+  if(cc){r.comEstado='compensada';r.comFecha=todayISO();toast('Comisión compensada')}else{r.comEstado='pendiente';r.comFecha='';toast('Comisión marcada como pendiente')}
+  save();renderAll();
+});
+
+/* ---------- informe ---------- */
+function delta(a,b,fmt){if(b==null||a==null)return '';const d=a-b;if(Math.abs(d)<0.005)return 'Igual que el trimestre anterior';return (d>0?'+':'−')+fmt(Math.abs(d))+' vs. trimestre anterior'}
+function renderInforme(){
+  const sel=$('#iQ');const prev=sel.value;const qs=quarters();
+  sel.innerHTML=qs.map(x=>'<option value="'+qKey(x.y,x.q)+'">'+qLabel(x.y,x.q)+'</option>').join('');
+  sel.value=prev&&[...sel.options].some(o=>o.value===prev)?prev:qKey(qs[0].y,qs[0].q);
+  const [y,q]=sel.value.split('-').map(Number);const m=metrics(y,q);const pq=prevQ(y,q);const p=metrics(pq.y,pq.q);
+  const cl=v=>v<-0.004?'neg':v>0.004?'pos':'';
+  const pct=v=>nf0.format(v*100)+'%';
+  const cinta='<div class="pcinta"><i style="background:#E3A33B"></i><i style="background:#D8662C"></i><i style="background:#B8322A"></i><i style="background:#5A3420"></i></div>';
+  const cats=Object.keys(m.porCat).sort((a,b)=>m.porCat[b]-m.porCat[a]);
+  const histSinFecha=m.det.some(d=>(d.r.pagos||[]).some(x=>x.historico&&!x.fecha));
+  let h='';
+  h+='<p class="pbrand">Casa Rossi</p><p class="ptitle">Informe trimestral de rentabilidad, '+qLabel(y,q)+'. Emitido el '+fdl(todayISO())+'.</p>'+cinta;
+  h+='<div class="pk blk">'+
+    pk('Resultado neto',usd(m.res),delta(m.res,p.res,usd),cl(m.res))+
+    pk('Ingresos por estadías',usd(m.dev),delta(m.dev,p.dev,usd))+
+    pk('Cobrado en el trimestre',usd(m.perc),delta(m.perc,p.perc,usd))+
+    pk('Ocupación',pct(m.ocup),m.noches+' de '+m.diasQ+' noches')+
+    pk('Tarifa promedio por noche',m.tarifa!=null?usd(m.tarifa):'Sin datos',m.tarifa!=null&&p.tarifa!=null?delta(m.tarifa,p.tarifa,usd):'')+
+  '</div>';
+  h+='<div class="blk"><h3>Estado de resultados</h3><table><tbody>'+
+    '<tr><td>Ingresos por estadías del trimestre</td><td class="num">'+usd(m.dev)+'</td></tr>'+
+    '<tr><td>Comisión de administración</td><td class="num">−'+usd(m.com)+'</td></tr>'+
+    '<tr><td>Gastos operativos</td><td class="num">−'+usd(m.gTot)+'</td></tr>'+
+    '<tr><td>Resultado por diferencia de cotización</td><td class="num '+cl(m.dif)+'">'+usd(m.dif)+'</td></tr>'+
+    '</tbody><tfoot><tr><td>Resultado neto</td><td class="num '+cl(m.res)+'">'+usd(m.res)+'</td></tr></tfoot></table>'+
+    '<p class="note">Los ingresos se reconocen por noche ocupada dentro del trimestre, al precio pactado en USD. La diferencia de cotización surge de cobrar en pesos en una fecha distinta a la de la reserva.</p></div>';
+  h+='<div class="blk"><h3>Reservas del trimestre</h3>'+(m.det.length?'<table><thead><tr><th>Check-in</th><th>Huésped</th><th class="num">Noches</th><th class="num">Ingreso</th><th class="num">Cobrado</th><th class="num">Dif. cotización</th></tr></thead><tbody>'+
+    m.det.map(d=>'<tr><td>'+fd(d.r.checkin)+'</td><td>'+esc(d.r.huesped)+(d.r.estado==='cancelada'?' (cancelada)':'')+'</td><td class="num">'+(d.nq||'—')+'</td><td class="num">'+usd(d.d)+'</td><td class="num">'+usd(d.cobQ)+'</td><td class="num '+cl(d.difQ)+'">'+usd(d.difQ)+'</td></tr>').join('')+
+    '</tbody><tfoot><tr><td colspan="3">Total</td><td class="num">'+usd(m.dev)+'</td><td class="num">'+usd(m.perc)+'</td><td class="num">'+usd(m.dif)+'</td></tr></tfoot></table>':'<p class="note">No hay reservas en este trimestre.</p>')+
+    (m.sinOut?'<p class="note">'+m.sinOut+(m.sinOut===1?' reserva no tiene':' reservas no tienen')+' check-out cargado: su ingreso se imputa completo al día de llegada y no suma noches a la ocupación ni a la tarifa promedio.</p>':'')+'</div>';
+  h+='<div class="blk"><h3>Gastos</h3><table><thead><tr><th>Concepto</th><th class="num">USD</th></tr></thead><tbody>'+
+    cats.map(c=>'<tr><td>'+esc(c)+'</td><td class="num">'+usd(m.porCat[c])+'</td></tr>').join('')+
+    '<tr><td>Comisión de administración</td><td class="num">'+usd(m.com)+'</td></tr>'+
+    '</tbody><tfoot><tr><td>Total</td><td class="num">'+usd(m.gTot+m.com)+'</td></tr></tfoot></table>'+
+    (m.dev?'<p class="note">Los gastos totales representan el '+nf1.format((m.gTot+m.com)/m.dev*100)+'% de los ingresos del trimestre.</p>':'')+'</div>';
+  h+='<div class="blk"><h3>Esquema de seña y cobro</h3><div class="pk">'+
+    pk('Resultado por cotización',usd(m.dif),'Seña al reservar, saldo después',cl(m.dif))+
+    pk('Anticipación de reserva',m.antic!=null?nf0.format(m.antic)+' días':'Sin datos','Promedio entre reserva y llegada')+
+    pk('Entre seña y saldo',m.senaSaldo!=null?nf0.format(m.senaSaldo)+' días':'Sin datos','Promedio entre primer y último cobro')+
+    '</div>'+timeline(m)+'</div>';
+  h+='<div class="blk"><h3>Posición al '+fdl(m.end)+'</h3><table><tbody>'+
+    '<tr><td>Señas cobradas de estadías futuras</td><td class="num">'+usd(m.senasFut)+'</td></tr>'+
+    '<tr><td>Saldos pendientes de cobro (al TC de cada reserva)</td><td class="num">'+usd(m.pend)+'</td></tr>'+
+    '<tr><td>Comisiones de administración pendientes de compensar</td><td class="num">'+usd(m.comPend)+'</td></tr>'+
+    '</tbody></table></div>';
+  h+='<div class="foot">Montos en USD convertidos a la cotización BNA vendedor de la fecha de cada operación.'+(histSinFecha?' Las reservas cargadas desde la planilla anterior no tienen fecha de cobro: se toman como cobradas el día de llegada (o el día de hoy si la estadía todavía no ocurrió), al tipo de cambio de la reserva y sin diferencia de cotización.':'')+'</div>';
+  $('#paper').innerHTML=h;
+}
+const pk=(l,v,d,c)=>'<div><div class="l">'+l+'</div><div class="v '+(c||'')+'">'+v+'</div><div class="d">'+(d||'&nbsp;')+'</div></div>';
+function timeline(m){
+  const rows=m.det.filter(d=>d.r.estado!=='cancelada');
+  if(!rows.length)return '';
+  const pts=[m.start,m.end];
+  rows.forEach(d=>{pts.push(d.r.checkin);if(d.r.checkout)pts.push(d.r.checkout);(d.r.pagos||[]).forEach(p=>p.fecha&&!p.historico&&pts.push(p.fecha));if(d.r.fechaReserva)pts.push(d.r.fechaReserva)});
+  pts.sort();const a=addDays(pts[0],-3),b=addDays(pts[pts.length-1],3);const span=days(a,b)||1;
+  const L=150,W=820,R=12,rh=22,top=26,H=top+rows.length*rh+8;
+  const x=s=>L+(W-L-R)*days(a,s)/span;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Línea de tiempo de reservas y cobros" style="margin-top:16px;font-family:Barlow,sans-serif">';
+  s+='<rect x="'+x(m.start)+'" y="'+(top-8)+'" width="'+(x(addDays(m.end,1))-x(m.start))+'" height="'+(H-top+4)+'" fill="#EFE3CC"/>';
+  let d0=a.slice(0,8)+'01';if(d0<a)d0=addDays(d0,32).slice(0,8)+'01';
+  for(let d=d0;d<=b;d=addDays(d,32).slice(0,8)+'01'){s+='<line x1="'+x(d)+'" x2="'+x(d)+'" y1="'+(top-8)+'" y2="'+(H-4)+'" stroke="#cdbb9e" stroke-dasharray="2 3"/><text x="'+(x(d)+3)+'" y="12" font-size="11" fill="#6b5a4b">'+MESES[+d.slice(5,7)-1].slice(0,3)+'</text>'}
+  rows.forEach((d,i)=>{const r=d.r,yy=top+i*rh+8;
+    s+='<text x="0" y="'+(yy+4)+'" font-size="11.5" fill="#2A1D14">'+esc(r.huesped.length>20?r.huesped.slice(0,19)+'…':r.huesped)+'</text>';
+    const fs=(r.pagos||[]).filter(p=>p.fecha&&!p.historico).map(p=>p.fecha).sort();
+    const first=r.fechaReserva||fs[0];
+    if(first&&first<r.checkin)s+='<line x1="'+x(first)+'" x2="'+x(r.checkin)+'" y1="'+yy+'" y2="'+yy+'" stroke="#cdbb9e" stroke-width="1.5"/>';
+    if(r.fechaReserva)s+='<rect x="'+(x(r.fechaReserva)-3)+'" y="'+(yy-3)+'" width="6" height="6" fill="#5A3420"/>';
+    const out=r.checkout||addDays(r.checkin,1);
+    s+='<rect x="'+x(r.checkin)+'" y="'+(yy-5)+'" width="'+Math.max(3,x(out)-x(r.checkin))+'" height="10" rx="2" fill="#B8322A"/>';
+    (r.pagos||[]).filter(p=>p.fecha&&!p.historico).forEach(p=>{s+='<circle cx="'+x(p.fecha)+'" cy="'+yy+'" r="4.5" fill="'+(p.tipo==='Seña'?'#E3A33B':'#D8662C')+'" stroke="#2A1D14" stroke-width=".8"/>'});
+  });
+  s+='</svg><p class="note">Cuadrado marrón: fecha de reserva. Círculo mostaza: seña. Círculo naranja: saldo u otro cobro. Barra roja: estadía. Zona sombreada: el trimestre.</p>';
+  return s;
+}
+$('#iQ').addEventListener('change',renderInforme);
+$('#iPrint').addEventListener('click',()=>{renderInforme();window.print()});
+
+/* ---------- datos ---------- */
+$('#dBackup').addEventListener('click',()=>{download('casa-rossi-backup-'+todayISO()+'.json',JSON.stringify(db,null,1),'application/json');toast('Backup descargado')});
+$('#dFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{const x=JSON.parse(rd.result);if(!x||!Array.isArray(x.reservas))throw 0;
+      if(!Array.isArray(x.gastos))x.gastos=[];
+      const hay=db.reservas.length||db.gastos.length;
+      if(hay&&!confirm('Esto reemplaza los datos actuales ('+db.reservas.length+' reservas y '+db.gastos.length+' gastos) por los del archivo ('+x.reservas.length+' reservas y '+x.gastos.length+' gastos). ¿Seguimos?'))return;
+      db={app:'casa-rossi',v:1,reservas:x.reservas,gastos:x.gastos};save();renderAll();toast('Datos cargados: '+x.reservas.length+' reservas')}
+    catch(err){toast('El archivo no es un backup válido de Casa Rossi')}
+    e.target.value=''};
+  rd.readAsText(f);
+});
+function csvCell(v){v=v==null?'':String(v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+const n2=v=>(v===''||v==null||isNaN(v))?'':nf2.format(v);
+$('#dCsvR').addEventListener('click',()=>{
+  const head=['Check-in','Check-out','Noches','Huésped','Teléfono','Plataforma','Estado','Fecha reserva','Moneda','Total USD','Pesos pactados','TC reserva','Cobrado USD','Falta USD','Dif. cotización USD','Comisión USD','Comisión estado','Comisión fecha','Comentarios'];
+  const rows=db.reservas.slice().sort((a,b)=>a.checkin<b.checkin?-1:1).map(r=>{const c=calc(r);return [fd(r.checkin),fd(r.checkout),c.noches||'',r.huesped,r.telefono,r.plataforma,r.estado,fd(r.fechaReserva),r.moneda,n2(r.totalUSD),n2(r.pesos),n2(tcRes(r)),n2(c.cobUSD),n2(c.faltaUSD),n2(c.dif),n2(c.comUSD),r.comEstado,fd(r.comFecha),r.comentarios]});
+  download('casa-rossi-reservas-'+todayISO()+'.csv','\ufeff'+[head,...rows].map(a=>a.map(csvCell).join(';')).join('\r\n'),'text/csv');
+});
+$('#dCsvG').addEventListener('click',()=>{
+  const head=['Fecha','Categoría','Detalle','Moneda','Monto','TC','USD','Tipo','Medio'];
+  const rows=db.gastos.slice().sort((a,b)=>a.fecha<b.fecha?-1:1).map(g=>[fd(g.fecha),g.cat,g.det,g.moneda,n2(g.monto),n2(g.tc),n2(gUSD(g)),g.tipo,g.medio]);
+  download('casa-rossi-gastos-'+todayISO()+'.csv','\ufeff'+[head,...rows].map(a=>a.map(csvCell).join(';')).join('\r\n'),'text/csv');
+});
+$('#dBorrar').addEventListener('click',()=>{
+  if(!confirm('Se borran todas las reservas y gastos de este navegador. ¿Descargaste un backup?'))return;
+  if(!confirm('Última confirmación: ¿borrar todo?'))return;
+  db=emptyDb();save();renderAll();toast('Datos borrados');
+});
+function renderDatos(){$('#dInfo').textContent=db.reservas.length+' reservas y '+db.gastos.length+' gastos guardados en este navegador.'}
+
+function renderAll(){renderKpis();renderReservas();renderGastos();renderComisiones();renderDatos();if(!$('#t-informe').hidden)renderInforme()}
+resetG();renderAll();loadTC();
+
+/* ---------- cielo: salto al hiperespacio y estrellas ---------- */
+const cv=$('#sky'),cx=cv.getContext('2d');let W=0,H=0,stars=[];
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function resize(){const dpr=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0);
+  const n=Math.round(Math.min(260,W*H/5200));stars=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H*.82,z:Math.random(),t:Math.random()*6.28}))}
+function draw(p,now){
+  cx.clearRect(0,0,W,H);const ox=W/2,oy=H*.38;
+  const e=1-Math.pow(1-p,3),f=.3+.7*e,st=Math.pow(1-p,2.2)*.75;
+  stars.forEach(s=>{const dx=s.x-ox,dy=s.y-oy;const X=ox+dx*f,Y=oy+dy*f;
+    const tw=p<1?1:.55+.45*Math.sin(now/900+s.t);const a=(.25+.75*s.z)*tw;
+    if(st>.01){const sx=ox+dx*f*(1-st*(.4+s.z)),sy=oy+dy*f*(1-st*(.4+s.z));cx.strokeStyle='rgba(239,230,210,'+a+')';cx.lineWidth=.6+s.z*1.4;cx.beginPath();cx.moveTo(sx,sy);cx.lineTo(X,Y);cx.stroke()}
+    else{cx.fillStyle=s.z>.93?'rgba(179,230,247,'+a+')':'rgba(239,230,210,'+a+')';cx.beginPath();cx.arc(X,Y,.5+s.z*1.1,0,6.283);cx.fill()}
+  });
+}
+resize();window.addEventListener('resize',()=>{resize();draw(1,performance.now())});
+if(reduce){draw(1,0)}
+else{const t0=performance.now(),dur=1500;
+  (function loop(now){const p=Math.min(1,(now-t0)/dur);draw(p,now);if(p<1)requestAnimationFrame(loop);else setInterval(()=>{if(!document.hidden)draw(1,performance.now())},140)})(t0);}
+})();
+</script>
+</body>
+</html>
