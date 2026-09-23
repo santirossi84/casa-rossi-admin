@@ -20,9 +20,14 @@ function autorizado(request) {
 
 function control(request) {
   if (!process.env.CASA_CLAVE) return json({ error: 'Falta configurar CASA_CLAVE en Vercel' }, 500);
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return json({ error: 'Falta conectar el almacenamiento Blob al proyecto' }, 500);
   if (!autorizado(request)) return json({ error: 'Clave incorrecta' }, 401);
   return null;
+}
+
+function detalle(e) {
+  const m = String((e && e.message) || e || 'error desconocido');
+  if (/token|credential|oidc|unauthori|store/i.test(m)) return 'no se encuentra el almacenamiento Blob conectado al proyecto (' + m.slice(0, 160) + ')';
+  return m.slice(0, 200);
 }
 
 async function leer() {
@@ -44,7 +49,7 @@ export async function GET(request) {
     const doc = await leer();
     return doc ? json(doc) : json({ vacio: true, rev: 0 });
   } catch (e) {
-    return json({ error: 'No se pudieron leer los datos' }, 500);
+    return json({ error: 'No se pudieron leer los datos: ' + detalle(e) }, 500);
   }
 }
 
@@ -52,10 +57,10 @@ export async function PUT(request) {
   const err = control(request);
   if (err) return err;
   let body;
-  try { body = await request.json(); } catch { return json({ error: 'El contenido no es JSON válido' }, 400); }
+  try { body = await request.json(); } catch { return json({ error: 'El contenido no es JSON valido' }, 400); }
   const data = body && body.data;
   if (!data || !Array.isArray(data.reservas) || !Array.isArray(data.gastos)) {
-    return json({ error: 'Formato de datos inválido' }, 400);
+    return json({ error: 'Formato de datos invalido' }, 400);
   }
   try {
     const actual = await leer();
@@ -69,6 +74,6 @@ export async function PUT(request) {
     await put('casa-rossi/historial/' + doc.updatedAt.slice(0, 10) + '.json', txt, opts);
     return json({ rev: doc.rev, updatedAt: doc.updatedAt });
   } catch (e) {
-    return json({ error: 'No se pudieron guardar los datos' }, 500);
+    return json({ error: 'No se pudieron guardar los datos: ' + detalle(e) }, 500);
   }
 }
