@@ -74,6 +74,13 @@ h2{font-family:'Ultra',Georgia,serif;font-weight:400;font-size:24px;margin:0;col
 .tbl tr.row:focus td:first-child{box-shadow:inset 3px 0 0 var(--holo)}
 .tbl tfoot td{font-weight:600;border-bottom:none}
 .sub2{display:block;font-size:13px;color:var(--muted)}
+.wa{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.wa svg{width:15px;height:15px;flex:none;fill:#25D366}
+.wa.ico{padding:3px 6px;margin-left:8px;vertical-align:-2px}
+#rWa{padding:4px 10px}
+#rWa svg{width:18px;height:18px}
+#dlg .dlg-b>.grid>label.f{align-content:start}
+.wa[aria-disabled="true"]{opacity:.45;pointer-events:none}
 
 .pill{display:inline-block;font-size:13px;padding:2px 10px;border-radius:999px;font-weight:500;white-space:nowrap}
 .p-contactada{background:rgba(154,166,191,.18);color:#C9D1E2}
@@ -329,7 +336,7 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
   <div class="dlg-b">
     <div class="grid">
       <label class="f">Huésped<input data-k="huesped"></label>
-      <label class="f">Teléfono<input data-k="telefono" inputmode="tel"></label>
+      <label class="f">Teléfono<span class="inline-tc"><input data-k="telefono" inputmode="tel"><a class="btn sm wa" id="rWa" target="_blank" rel="noopener" title="WhatsApp" hidden></a></span><span class="sub2" id="rWaHint" hidden>Falta el código de área para WhatsApp.</span></label>
       <label class="f">Plataforma
         <select data-k="plataforma"><option value="">Sin dato</option><option>Booking</option><option>Airbnb</option><option>Directo</option><option>Otra</option></select>
       </label>
@@ -611,6 +618,41 @@ const kpi=(l,v,h)=>'<div class="glass kpi holo" tabindex="0"><div class="lbl">'+
 
 /* ---------- reservas ---------- */
 const pillE=e=>'<span class="pill p-'+(e==='señada'?'senada':e)+'">'+(e?e[0].toUpperCase()+e.slice(1):'')+'</span>';
+/* ---------- WhatsApp ---------- */
+const WA_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>';
+// Saca el 15 de los celulares viejos cuando el número nacional tiene 12 dígitos (10 + 15).
+function sin15(n){
+  if(n.length!==12)return n;
+  for(const k of n.startsWith('11')?[2]:[3,4])if(n.slice(k,k+2)==='15')return n.slice(0,k)+n.slice(k+2);
+  return n;
+}
+// Número para wa.me, o '' si no se puede armar uno válido.
+function waNumero(tel){
+  let d=String(tel||'').replace(/\D/g,'');
+  if(d.startsWith('00'))d=d.slice(2);
+  let nat;
+  if(d.startsWith('549'))nat=d.slice(3);
+  else if(d.startsWith('54'))nat=d.slice(2);
+  else if(d.startsWith('0'))nat=d.slice(1);
+  else if(d.length===10||(d.length===12&&sin15(d)!==d))nat=d;
+  else return d.length>=11?d:'';
+  nat=sin15(nat);
+  return nat.length===10?'549'+nat:'';
+}
+const montoMsj=n=>{n=r2(n);return Number.isInteger(n)?nf0.format(n):nf2.format(n)};
+function waMensaje(r){
+  const nom=(r.huesped||'').trim().split(/\s+/)[0];
+  let s='Hola'+(nom?' '+nom:'')+', ¿cómo va? Te escribo por la reserva en Casa Rossi';
+  if(r.checkin){const [,m,d]=r.checkin.split('-');s+=' del '+(+d)+' de '+MESES[+m-1]}
+  s+='.';
+  if(r.estado==='señada'){const c=calc(r);
+    if(r.moneda==='USD'){if(c.faltaUSD>0)s+=' Te queda un saldo de USD '+montoMsj(c.faltaUSD)+'.'}
+    else if(c.faltaARS>0)s+=' Te queda un saldo de $'+montoMsj(c.faltaARS)+'.'}
+  return s;
+}
+function waLink(r){const n=waNumero(r.telefono);return n?'https://wa.me/'+n+'?text='+encodeURIComponent(waMensaje(r)):''}
+function waBtn(r){const h=waLink(r);return h?'<a class="btn sm wa ico" href="'+esc(h)+'" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp a '+esc(r.huesped)+'" title="WhatsApp">'+WA_SVG+'</a>':''}
+
 function renderReservas(){
   const q=$('#fBuscar').value.trim().toLowerCase(),f=$('#fEstado').value;
   let rs=db.reservas.slice().sort((a,b)=>(a.checkin||'')<(b.checkin||'')?1:-1);
@@ -624,12 +666,12 @@ function renderReservas(){
   rs.map(r=>{const c=calc(r);
     const falta=r.estado==='contactada'||r.estado==='cancelada'?'<span class="muted">—</span>':(c.faltaARS!==null?(c.faltaARS?ars(c.faltaARS)+'<span class="sub2">'+usd(c.faltaUSD)+' al TC de reserva</span>':'—'):(c.faltaUSD?usd(c.faltaUSD):'—'));
     return '<tr class="row" tabindex="0" data-id="'+r.id+'"><td>'+fd(r.checkin)+'<span class="sub2">'+(c.noches?c.noches+(c.noches===1?' noche':' noches'):'Sin check-out')+'</span></td>'+
-    '<td>'+esc(r.huesped)+'<span class="sub2">'+esc(r.plataforma||'Plataforma sin dato')+'</span></td>'+
+    '<td>'+esc(r.huesped)+waBtn(r)+'<span class="sub2">'+esc(r.plataforma||'Plataforma sin dato')+'</span></td>'+
     '<td class="num">'+usd(r.totalUSD)+'</td><td class="num">'+usd(c.cobUSD)+'</td><td class="num">'+falta+'</td>'+
     '<td>'+pillE(r.estado)+'</td><td>'+(r.estado==='cancelada'||r.estado==='contactada'?'<span class="muted">—</span>':'<span class="pill p-'+r.comEstado+'">'+(r.comEstado==='compensada'?'Compensada':'Pendiente')+'</span>')+'</td></tr>'}).join('')+'</tbody>';
 }
-$('#tblRes').addEventListener('click',e=>{const tr=e.target.closest('tr.row');if(tr)openRes(tr.dataset.id)});
-$('#tblRes').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr.row');if(tr)openRes(tr.dataset.id)}});
+$('#tblRes').addEventListener('click',e=>{if(e.target.closest('.wa'))return;const tr=e.target.closest('tr.row');if(tr)openRes(tr.dataset.id)});
+$('#tblRes').addEventListener('keydown',e=>{if(e.target.closest('.wa'))return;if(e.key==='Enter'){const tr=e.target.closest('tr.row');if(tr)openRes(tr.dataset.id)}});
 $('#fBuscar').addEventListener('input',renderReservas);
 $('#fEstado').addEventListener('change',renderReservas);
 $('#btnNueva').addEventListener('click',()=>openRes(null));
@@ -678,6 +720,10 @@ $('#rTcBtn').addEventListener('click',async()=>{if(!ed.fechaReserva){$('#dlgErr'
   const t=await getTC(ed.fechaReserva);if(t){setField('tcReserva',t);if(+ed.totalUSD)setField('pesos',r2(ed.totalUSD*t));renderPagos();refreshDlg()}else $('#dlgErr').textContent='No se pudo traer la cotización. Cargala a mano.'});
 function refreshDlg(){
   const c=calc(ed);
+  const tel=String(ed.telefono||'').trim(),wa=$('#rWa'),h=tel?waLink(ed):'';
+  wa.hidden=!tel;$('#rWaHint').hidden=!tel||!!h;
+  wa.innerHTML=WA_SVG;wa.setAttribute('aria-label','Escribir por WhatsApp a '+(ed.huesped||'el huésped'));
+  if(h){wa.href=h;wa.removeAttribute('aria-disabled')}else{wa.removeAttribute('href');wa.setAttribute('aria-disabled','true')}
   $('#rNoches').value=c.noches?c.noches:(ed.checkin&&ed.checkout?'Revisá las fechas':'');
   $('#rCom').value=usd(c.comUSD);
   $('#pSum').innerHTML='<span>Cobrado <b>'+usd(c.cobUSD)+'</b></span><span>Falta <b>'+(c.faltaARS!==null?ars(c.faltaARS)+' ('+usd(c.faltaUSD)+')':usd(c.faltaUSD))+'</b></span><span>Diferencia de cotización <b class="'+(c.dif<0?'neg':c.dif>0?'pos':'')+'">'+usd(c.dif)+'</b></span>';
