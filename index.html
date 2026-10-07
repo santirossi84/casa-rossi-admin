@@ -294,9 +294,10 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
     <section class="tab" id="t-informe" role="tabpanel" hidden>
       <div class="glass panel no-print" style="margin-bottom:16px">
         <div class="panel-h" style="margin:0">
-          <h2>Informe trimestral</h2>
+          <h2>Informe</h2>
           <div class="btns">
-            <select id="iQ" aria-label="Trimestre" style="width:auto"></select>
+            <select id="iModo" aria-label="Tipo de período" style="width:auto"><option value="q">Trimestral</option><option value="m">Mensual</option></select>
+            <select id="iQ" aria-label="Período" style="width:auto"></select>
             <button class="btn primary" id="iPrint">Imprimir o guardar PDF</button>
           </div>
         </div>
@@ -541,6 +542,16 @@ function qRange(y,q){const m1=(q-1)*3+1;const start=y+'-'+String(m1).padStart(2,
 const qKey=(y,q)=>y+'-'+q;
 const qLabel=(y,q)=>'T'+q+' '+y+' ('+MESES[(q-1)*3]+' a '+MESES[(q-1)*3+2]+')';
 function prevQ(y,q){return q===1?{y:y-1,q:4}:{y,q:q-1}}
+/* ---------- meses ---------- */
+function mRange(y,m){const start=y+'-'+String(m).padStart(2,'0')+'-01';const nx=m===12?(y+1)+'-01-01':y+'-'+String(m+1).padStart(2,'0')+'-01';return {start,end:addDays(nx,-1),next:nx}}
+const mLabel=(y,m)=>MESES[m-1][0].toUpperCase()+MESES[m-1].slice(1)+' '+y;
+function prevM(y,m){return m===1?{y:y-1,m:12}:{y,m:m-1}}
+function months(){
+  const qs=quarters();const out=[];
+  qs.forEach(x=>{for(let m=(x.q-1)*3+3;m>(x.q-1)*3;m--)out.push({y:x.y,m})});
+  const hoy=todayISO(),cy=+hoy.slice(0,4),cm=+hoy.slice(5,7);
+  return out.filter(x=>x.y<cy||(x.y===cy&&x.m<=cm));
+}
 function quarters(){
   const fechas=[todayISO()];
   db.reservas.forEach(r=>{if(r.checkin)fechas.push(r.checkin);(r.pagos||[]).forEach(p=>p.fecha&&fechas.push(p.fecha))});
@@ -552,8 +563,8 @@ function quarters(){
 }
 function gUSD(g){const m=+g.monto||0;if(g.moneda==='USD')return m;return +g.tc?m/(+g.tc):0}
 
-function metrics(y,q){
-  const {start,end,next}=qRange(y,q);const diasQ=days(start,next);
+function metrics(y,q,mo){
+  const {start,end,next}=mo?mRange(y,mo):qRange(y,q);const diasQ=days(start,next);
   const inQ=d=>d&&d>=start&&d<=end;
   let dev=0,noches=0,devN=0,com=0,sinOut=0,perc=0,dif=0;const det=[];const antic=[],sena=[];
   db.reservas.forEach(r=>{
@@ -588,7 +599,7 @@ function metrics(y,q){
   });
   const avg=a=>a.length?sum(a)/a.length:null;
   det.sort((a,b)=>a.r.checkin<b.r.checkin?-1:1);
-  return {y,q,start,end,diasQ,dev,noches,devN,com,sinOut,perc,dif,det,gastos,porCat,gTot,
+  return {y,q,mo,start,end,diasQ,dev,noches,devN,com,sinOut,perc,dif,det,gastos,porCat,gTot,
     res:dev-com-gTot+dif,ocup:noches/diasQ,tarifa:noches?devN/noches:null,
     antic:avg(antic),senaSaldo:avg(sena),senasFut,pend,comPend};
 }
@@ -858,42 +869,48 @@ $('#tblCom').addEventListener('click',e=>{
 });
 
 /* ---------- informe ---------- */
-function delta(a,b,fmt){if(b==null||a==null)return '';const d=a-b;if(Math.abs(d)<0.005)return 'Igual que el trimestre anterior';return (d>0?'+':'−')+fmt(Math.abs(d))+' vs. trimestre anterior'}
+function delta(a,b,fmt,u){if(b==null||a==null)return '';u=u||'trimestre';const d=a-b;if(Math.abs(d)<0.005)return 'Igual que el '+u+' anterior';return (d>0?'+':'−')+fmt(Math.abs(d))+' vs. '+u+' anterior'}
 function renderInforme(){
-  const sel=$('#iQ');const prev=sel.value;const qs=quarters();
-  sel.innerHTML=qs.map(x=>'<option value="'+qKey(x.y,x.q)+'">'+qLabel(x.y,x.q)+'</option>').join('');
-  sel.value=prev&&[...sel.options].some(o=>o.value===prev)?prev:qKey(qs[0].y,qs[0].q);
-  const [y,q]=sel.value.split('-').map(Number);const m=metrics(y,q);const pq=prevQ(y,q);const p=metrics(pq.y,pq.q);
+  const modo=$('#iModo').value;const mensual=modo==='m';
+  const U=mensual?'mes':'trimestre';
+  const sel=$('#iQ');const prev=sel.value;
+  const opts=mensual?months().map(x=>({v:x.y+'-m'+x.m,t:mLabel(x.y,x.m)})):quarters().map(x=>({v:qKey(x.y,x.q),t:qLabel(x.y,x.q)}));
+  sel.innerHTML=opts.map(o=>'<option value="'+o.v+'">'+o.t+'</option>').join('');
+  sel.value=prev&&[...sel.options].some(o=>o.value===prev)?prev:opts[0].v;
+  let y,q,mo,m,p,label;
+  if(mensual){[y,mo]=sel.value.split('-m').map(Number);m=metrics(y,null,mo);const pm=prevM(y,mo);p=metrics(pm.y,null,pm.m);label=mLabel(y,mo)}
+  else{[y,q]=sel.value.split('-').map(Number);m=metrics(y,q);const pq=prevQ(y,q);p=metrics(pq.y,pq.q);label=qLabel(y,q)}
+  const dlt=(a,b,f)=>delta(a,b,f,U);
   const cl=v=>v<-0.004?'neg':v>0.004?'pos':'';
   const pct=v=>nf0.format(v*100)+'%';
   const cinta='<div class="pcinta"><i style="background:#E3A33B"></i><i style="background:#D8662C"></i><i style="background:#B8322A"></i><i style="background:#5A3420"></i></div>';
   const cats=Object.keys(m.porCat).sort((a,b)=>m.porCat[b]-m.porCat[a]);
   const histSinFecha=m.det.some(d=>(d.r.pagos||[]).some(x=>x.historico&&!x.fecha));
   let h='';
-  h+='<p class="pbrand">Casa Rossi</p><p class="ptitle">Informe trimestral de rentabilidad, '+qLabel(y,q)+'. Emitido el '+fdl(todayISO())+'.</p>'+cinta;
+  h+='<p class="pbrand">Casa Rossi</p><p class="ptitle">'+(mensual?'Informe mensual':'Informe trimestral')+' de rentabilidad, '+label+'. Emitido el '+fdl(todayISO())+'.</p>'+cinta;
   h+='<div class="pk blk">'+
-    pk('Resultado neto',usd(m.res),delta(m.res,p.res,usd),cl(m.res))+
-    pk('Ingresos por estadías',usd(m.dev),delta(m.dev,p.dev,usd))+
-    pk('Cobrado en el trimestre',usd(m.perc),delta(m.perc,p.perc,usd))+
+    pk('Resultado neto',usd(m.res),dlt(m.res,p.res,usd),cl(m.res))+
+    pk('Ingresos por estadías',usd(m.dev),dlt(m.dev,p.dev,usd))+
+    pk('Cobrado en el '+U+'',usd(m.perc),dlt(m.perc,p.perc,usd))+
     pk('Ocupación',pct(m.ocup),m.noches+' de '+m.diasQ+' noches')+
-    pk('Tarifa promedio por noche',m.tarifa!=null?usd(m.tarifa):'Sin datos',m.tarifa!=null&&p.tarifa!=null?delta(m.tarifa,p.tarifa,usd):'')+
+    pk('Tarifa promedio por noche',m.tarifa!=null?usd(m.tarifa):'Sin datos',m.tarifa!=null&&p.tarifa!=null?dlt(m.tarifa,p.tarifa,usd):'')+
   '</div>';
   h+='<div class="blk"><h3>Estado de resultados</h3><table><tbody>'+
-    '<tr><td>Ingresos por estadías del trimestre</td><td class="num">'+usd(m.dev)+'</td></tr>'+
+    '<tr><td>Ingresos por estadías del '+U+'</td><td class="num">'+usd(m.dev)+'</td></tr>'+
     '<tr><td>Comisión de administración</td><td class="num">−'+usd(m.com)+'</td></tr>'+
     '<tr><td>Gastos operativos</td><td class="num">−'+usd(m.gTot)+'</td></tr>'+
     '<tr><td>Resultado por diferencia de cotización</td><td class="num '+cl(m.dif)+'">'+usd(m.dif)+'</td></tr>'+
     '</tbody><tfoot><tr><td>Resultado neto</td><td class="num '+cl(m.res)+'">'+usd(m.res)+'</td></tr></tfoot></table>'+
-    '<p class="note">Los ingresos se reconocen por noche ocupada dentro del trimestre, al precio pactado en USD. La diferencia de cotización surge de cobrar en pesos en una fecha distinta a la de la reserva.</p></div>';
-  h+='<div class="blk"><h3>Reservas del trimestre</h3>'+(m.det.length?'<table><thead><tr><th>Check-in</th><th>Huésped</th><th class="num">Noches</th><th class="num">Ingreso</th><th class="num">Cobrado</th><th class="num">Dif. cotización</th></tr></thead><tbody>'+
+    '<p class="note">Los ingresos se reconocen por noche ocupada dentro del '+U+', al precio pactado en USD. La diferencia de cotización surge de cobrar en pesos en una fecha distinta a la de la reserva.</p></div>';
+  h+='<div class="blk"><h3>Reservas del '+U+'</h3>'+(m.det.length?'<table><thead><tr><th>Check-in</th><th>Huésped</th><th class="num">Noches</th><th class="num">Ingreso</th><th class="num">Cobrado</th><th class="num">Dif. cotización</th></tr></thead><tbody>'+
     m.det.map(d=>'<tr><td>'+fd(d.r.checkin)+'</td><td>'+esc(d.r.huesped)+(d.r.estado==='cancelada'?' (cancelada)':'')+'</td><td class="num">'+(d.nq||'—')+'</td><td class="num">'+usd(d.d)+'</td><td class="num">'+usd(d.cobQ)+'</td><td class="num '+cl(d.difQ)+'">'+usd(d.difQ)+'</td></tr>').join('')+
-    '</tbody><tfoot><tr><td colspan="3">Total</td><td class="num">'+usd(m.dev)+'</td><td class="num">'+usd(m.perc)+'</td><td class="num">'+usd(m.dif)+'</td></tr></tfoot></table>':'<p class="note">No hay reservas en este trimestre.</p>')+
+    '</tbody><tfoot><tr><td colspan="3">Total</td><td class="num">'+usd(m.dev)+'</td><td class="num">'+usd(m.perc)+'</td><td class="num">'+usd(m.dif)+'</td></tr></tfoot></table>':'<p class="note">No hay reservas en este '+U+'.</p>')+
     (m.sinOut?'<p class="note">'+m.sinOut+(m.sinOut===1?' reserva no tiene':' reservas no tienen')+' check-out cargado: su ingreso se imputa completo al día de llegada y no suma noches a la ocupación ni a la tarifa promedio.</p>':'')+'</div>';
   h+='<div class="blk"><h3>Gastos</h3><table><thead><tr><th>Concepto</th><th class="num">USD</th></tr></thead><tbody>'+
     cats.map(c=>'<tr><td>'+esc(c)+'</td><td class="num">'+usd(m.porCat[c])+'</td></tr>').join('')+
     '<tr><td>Comisión de administración</td><td class="num">'+usd(m.com)+'</td></tr>'+
     '</tbody><tfoot><tr><td>Total</td><td class="num">'+usd(m.gTot+m.com)+'</td></tr></tfoot></table>'+
-    (m.dev?'<p class="note">Los gastos totales representan el '+nf1.format((m.gTot+m.com)/m.dev*100)+'% de los ingresos del trimestre.</p>':'')+'</div>';
+    (m.dev?'<p class="note">Los gastos totales representan el '+nf1.format((m.gTot+m.com)/m.dev*100)+'% de los ingresos del '+U+'.</p>':'')+'</div>';
   h+='<div class="blk"><h3>Esquema de seña y cobro</h3><div class="pk">'+
     pk('Resultado por cotización',usd(m.dif),'Seña al reservar, saldo después',cl(m.dif))+
     pk('Anticipación de reserva',m.antic!=null?nf0.format(m.antic)+' días':'Sin datos','Promedio entre reserva y llegada')+
@@ -930,10 +947,11 @@ function timeline(m){
     s+='<rect x="'+x(r.checkin)+'" y="'+(yy-5)+'" width="'+Math.max(3,x(out)-x(r.checkin))+'" height="10" rx="2" fill="#B8322A"/>';
     (r.pagos||[]).filter(p=>p.fecha&&!p.historico).forEach(p=>{s+='<circle cx="'+x(p.fecha)+'" cy="'+yy+'" r="4.5" fill="'+(p.tipo==='Seña'?'#E3A33B':'#D8662C')+'" stroke="#2A1D14" stroke-width=".8"/>'});
   });
-  s+='</svg><p class="note">Cuadrado marrón: fecha de reserva. Círculo mostaza: seña. Círculo naranja: saldo u otro cobro. Barra roja: estadía. Zona sombreada: el trimestre.</p>';
+  s+='</svg><p class="note">Cuadrado marrón: fecha de reserva. Círculo mostaza: seña. Círculo naranja: saldo u otro cobro. Barra roja: estadía. Zona sombreada: el período del informe.</p>';
   return s;
 }
 $('#iQ').addEventListener('change',renderInforme);
+$('#iModo').addEventListener('change',()=>{$('#iQ').value='';renderInforme()});
 $('#iPrint').addEventListener('click',()=>{renderInforme();window.print()});
 
 /* ---------- datos ---------- */
