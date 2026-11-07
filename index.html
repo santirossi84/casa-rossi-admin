@@ -328,6 +328,20 @@ dialog::backdrop{background:rgba(5,8,20,.62)}
   </div>
 </div>
 
+<!-- DIALOG CONFLICTO DE SINCRONIZACIÓN -->
+<dialog id="dConf" aria-labelledby="dConfTit">
+  <div class="dlg-h"><h2 id="dConfTit">Cambios sin subir y la nube tiene otra versión</h2></div>
+  <div class="dlg-b">
+    <p>Este navegador tiene cambios que nunca llegaron a la nube, y mientras tanto la nube se modificó desde otro lado. Hay que elegir qué versión queda. La otra se pierde.</p>
+    <p class="muted" id="dConfInfo"></p>
+    <div class="btns" style="margin-top:14px"><button class="btn primary" type="button" id="dConfBk">1. Descargar backup de las dos versiones</button></div>
+    <div class="btns" style="margin-top:14px">
+      <button class="btn" type="button" id="dConfLocal" disabled>2a. Quedarme con lo de este navegador (pisa la nube)</button>
+      <button class="btn" type="button" id="dConfCloud" disabled>2b. Usar la versión de la nube (descarta lo local)</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- DIALOG RESERVA -->
 <dialog id="dlg" aria-labelledby="dlgTit">
   <div class="dlg-h">
@@ -417,48 +431,80 @@ function emptyDb(){return {app:'casa-rossi',v:1,reservas:[],gastos:[]}}
 function load(){try{const x=JSON.parse(localStorage.getItem(LS));if(x&&Array.isArray(x.reservas))return x}catch(e){}return emptyDb()}
 let db=load();
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(db));localStorage.setItem(LS+'_rev',String(rev));return true}catch(e){return false}}
-function save(){const okL=saveLocal();if(cloud)schedulePush();else if(!okL){toast('No se pudo guardar en este navegador. Descargá un backup.');return false}return true}
+function save(){const okL=saveLocal();setDirty(true);if(cloud)schedulePush();else if(!okL){toast('No se pudo guardar en este navegador. Descargá un backup.');return false}return true}
 
 /* ---------- nube ---------- */
 const KC='casa_rossi_clave';
-let clave='',rev=0,cloud=false,pushTimer=null,pushing=false,dirty=false;
-try{clave=localStorage.getItem(KC)||'';rev=+(localStorage.getItem(LS+'_rev')||0)}catch(e){}
+let clave='',rev=0,cloud=false,pushTimer=null,pushing=false,dirty=false,ver=0,conflict=null,cloudDown=false;
+try{clave=localStorage.getItem(KC)||'';rev=+(localStorage.getItem(LS+'_rev')||0);dirty=localStorage.getItem(LS+'_dirty')==='1'}catch(e){}
+/* marca de "cambios sin subir": sobrevive a recargas; solo se borra cuando push() responde OK (o al elegir la versión de la nube) */
+function setDirty(v){dirty=v;try{if(v)localStorage.setItem(LS+'_dirty','1');else localStorage.removeItem(LS+'_dirty')}catch(e){}}
 function setSync(cls,t){const e=$('#sync');e.className='sync '+cls;e.textContent=t}
 function api(method,body){return fetch('/api/datos',{method,cache:'no-store',headers:{'content-type':'application/json','x-clave':clave},body:body?JSON.stringify(body):undefined})}
 function showLogin(msg){cloud=false;$('#app').hidden=true;$('#login').hidden=false;$('#lErr').textContent=msg||'';setSync('off','Sin sesión');setTimeout(()=>$('#lClave').focus(),50)}
 function hideLogin(){$('#login').hidden=true;$('#app').hidden=false}
 async function pull(first){
   if(!clave){showLogin();return}
+  if(conflict)return;
   setSync('sync-on','Sincronizando');
   let r;
-  try{r=await api('GET')}catch(e){setSync('off','Sin conexión: los cambios quedan en este navegador');hideLogin();cloud=true;dirty=true;return}
+  try{r=await api('GET')}catch(e){setSync('off','Sin conexión: los cambios quedan en este navegador');hideLogin();cloud=true;return}
   if(r.status===401){try{localStorage.removeItem(KC)}catch(e){}clave='';showLogin(first?'La clave no es correcta.':'La clave cambió. Ingresala de nuevo.');return}
   if(r.status===404){cloud=false;hideLogin();setSync('off','Solo en este navegador');return}
   let j={};try{j=await r.json()}catch(e){}
-  if(!r.ok){hideLogin();cloud=true;setSync('off',j.error||'No se pudo conectar con la nube');return}
-  hideLogin();cloud=true;
+  if(!r.ok){hideLogin();cloud=false;cloudDown=true;setSync('off','Nube no disponible: no cargues datos nuevos');toast('Nube no disponible: no cargues datos nuevos'+(j.error?' ('+j.error+')':''));return}
+  hideLogin();cloud=true;cloudDown=false;
   if(j.vacio){if(db.reservas.length||db.gastos.length){toast('Subiendo a la nube los datos de este navegador');await push()}else setSync('ok','Guardado en la nube');return}
-  if(dirty&&+j.rev<=rev){await push();return}
+  if(dirty){
+    if(+j.rev<=rev){await push();return}
+    showConflict(j);return;
+  }
   if(+j.rev>=rev){db=j.data;if(!Array.isArray(db.gastos))db.gastos=[];rev=+j.rev;saveLocal();renderAll()}
   setSync('ok','Guardado en la nube');
 }
-function schedulePush(){dirty=true;clearTimeout(pushTimer);pushTimer=setTimeout(push,600);setSync('sync-on','Guardando')}
+function showConflict(j){
+  conflict=j;cloud=false;clearTimeout(pushTimer);
+  setSync('off','Conflicto: hay cambios sin subir y la nube tiene otra versión');
+  $('#dConfInfo').textContent='Este navegador: versión '+rev+' con cambios pendientes. Nube: versión '+(+j.rev)+(j.updatedAt?' (modificada el '+String(j.updatedAt).slice(0,10)+')':'')+'.';
+  $('#dConfLocal').disabled=true;$('#dConfCloud').disabled=true;
+  if(!$('#dConf').open)$('#dConf').showModal();
+}
+function closeConflict(){conflict=null;if($('#dConf').open)$('#dConf').close()}
+$('#dConf').addEventListener('cancel',e=>e.preventDefault());
+$('#dConfBk').addEventListener('click',()=>{
+  if(!conflict)return;
+  const d=todayISO();
+  download('casa-rossi-backup-local-'+d+'.json',JSON.stringify(db,null,1),'application/json');
+  setTimeout(()=>download('casa-rossi-backup-nube-'+d+'.json',JSON.stringify(conflict.data,null,1),'application/json'),400);
+  $('#dConfLocal').disabled=false;$('#dConfCloud').disabled=false;toast('Backups descargados. Ahora elegí qué versión queda.');
+});
+$('#dConfLocal').addEventListener('click',async()=>{
+  if(!conflict)return;
+  rev=+conflict.rev;closeConflict();cloud=true;saveLocal();await push();
+});
+$('#dConfCloud').addEventListener('click',()=>{
+  if(!conflict)return;
+  db=conflict.data;if(!Array.isArray(db.gastos))db.gastos=[];if(!Array.isArray(db.reservas))db.reservas=[];
+  rev=+conflict.rev;setDirty(false);saveLocal();closeConflict();cloud=true;renderAll();setSync('ok','Guardado en la nube');
+});
+function schedulePush(){ver++;setDirty(true);clearTimeout(pushTimer);pushTimer=setTimeout(push,600);setSync('sync-on','Guardando')}
 async function push(){
   if(!cloud||!clave)return;
   if(pushing){clearTimeout(pushTimer);pushTimer=setTimeout(push,600);return}
-  pushing=true;dirty=false;
+  pushing=true;const v=ver;
   try{
     const r=await api('PUT',{rev,data:db});
-    if(r.status===401){pushing=false;dirty=true;try{localStorage.removeItem(KC)}catch(e){}clave='';showLogin('La clave cambió. Ingresala de nuevo.');return}
-    if(r.status===409){const j=await r.json();db=j.data;rev=+j.rev;saveLocal();renderAll();toast('Había cambios más nuevos hechos desde otro dispositivo. Se cargaron esos: revisá tu último cambio.');setSync('ok','Guardado en la nube');return}
+    if(r.status===401){pushing=false;try{localStorage.removeItem(KC)}catch(e){}clave='';showLogin('La clave cambió. Ingresala de nuevo.');return}
+    if(r.status===409){const j=await r.json();showConflict(j);return}
     if(!r.ok)throw 0;
     const j=await r.json();rev=+j.rev;saveLocal();
+    if(v===ver)setDirty(false);
     setSync(dirty?'sync-on':'ok',dirty?'Guardando':'Guardado en la nube');
-  }catch(e){dirty=true;setSync('off','Sin conexión: cambios pendientes de subir')}
+  }catch(e){setDirty(true);setSync('off','Sin conexión: cambios pendientes de subir')}
   finally{pushing=false}
 }
-window.addEventListener('online',()=>{if(cloud&&dirty)push()});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloud&&!pushing){if(dirty)push();else pull()}});
+window.addEventListener('online',()=>{if(cloud&&dirty)push();else if(cloudDown&&!conflict)pull()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||conflict)return;if(cloud&&!pushing){if(dirty)push();else pull()}else if(cloudDown&&clave)pull()});
 window.addEventListener('beforeunload',e=>{if(cloud&&(dirty||pushing)){e.preventDefault();e.returnValue=''}});
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
